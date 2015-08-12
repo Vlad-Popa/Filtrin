@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-
-
-
 package controller;
 
 import com.google.common.base.Predicate;
