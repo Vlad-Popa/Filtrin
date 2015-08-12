@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+
+<MenuBar xmlns="http://javafx.com/javafx/8.0.40"
+         xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="controller.MenuController">
+    <Menu mnemonicParsing="false" text="Filters">
+        <fx:define><ToggleGroup fx:id="group"/></fx:define>
+        <RadioMenuItem text="All atoms"  toggleGroup="$group" selected="true" />
+        <RadioMenuItem text="Main chain" toggleGroup="$group"/>
+        <RadioMenuItem text="Side chain" toggleGroup="$group"/>
+        <RadioMenuItem text="Backbone"   toggleGroup="$group"/>
+        <RadioMenuItem text="C-Alpha"    toggleGroup="$group"/>
+        <SeparatorMenuItem/>
+        <RadioMenuItem text="Hetero atoms" toggleGroup="$group"/>
+    </Menu>
+    <Menu mnemonicParsing="false" text="Info">
+        <MenuItem mnemonicParsing="false" text="Licensing" onAction="#handleLicenceDialogue"/>
+        <MenuItem mnemonicParsing="false" text="About" onAction="#handleAboutDialogue" />
+    </Menu>
+</MenuBar>

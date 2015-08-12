@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.layout.*?>
+<?import org.controlsfx.control.*?>
+
+<VBox fx:id="chartBox"
+      xmlns="http://javafx.com/javafx/8.0.40"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.ChartController">
+    <HBox fx:id="chartPane" VBox.vgrow="ALWAYS">
+        <LineChart fx:id="chart" animated="false"
+                   createSymbols="false" legendSide="RIGHT"
+                   onScroll="#handleScroll" HBox.hgrow="ALWAYS">
+            <xAxis><NumberAxis fx:id="xAxis" animated="false" autoRanging="false" side="BOTTOM" tickUnit="10.0" upperBound="200.0" lowerBound="0.0"/></xAxis>
+            <yAxis><NumberAxis fx:id="yAxis" animated="false" autoRanging="false" side="LEFT" tickUnit="1.0" upperBound="2.0" lowerBound="-2.0" /></yAxis>
+        </LineChart>
+        <RangeSlider fx:id="ySlider" blockIncrement="0.5"
+                     highValue="1.0" lowValue="0.0" majorTickUnit="0.5"
+                     max="2.0" min="-2.0" minorTickCount="4"
+                     orientation="VERTICAL" snapToTicks="true">
+            <padding><Insets bottom="31.0" top="8.0" /></padding>
+        </RangeSlider>
+    </HBox>
+    <RangeSlider highValue="200.0" lowValue="0.0"
+                 majorTickUnit="10.0" max="500.0"
+                 min="0" minorTickCount="0" snapToTicks="true"
+                 fx:id="xSlider">
+        <padding><Insets left="38.0" right="43.0" /></padding>
+    </RangeSlider>
+</VBox>

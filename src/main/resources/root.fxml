@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox fx:id="root" prefHeight="600.0" prefWidth="800.0"
+      xmlns="http://javafx.com/javafx/8.0.40"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.RootController">
+    <fx:include fx:id="menu" source="menu.fxml"/>
+    <SplitPane fx:id="outerPane" dividerPositions="1.0" VBox.vgrow="ALWAYS">
+        <SplitPane fx:id="graphPane" dividerPositions="0.5" orientation="VERTICAL">
+            <fx:include fx:id="chart" source="chart.fxml" />
+            <fx:include fx:id="table" source="table.fxml" />
+        </SplitPane>
+      <VBox fx:id="vBox" />
+    </SplitPane>
+    <ToolBar fx:id="statusBar" minHeight="20.0" />
+</VBox>

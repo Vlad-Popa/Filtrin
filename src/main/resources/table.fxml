@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import org.controlsfx.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<VBox xmlns="http://javafx.com/javafx/8.0.40"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="controller.TableController">
+    <HBox fx:id="toolbar" spacing="4.0">
+        <SegmentedButton fx:id="group1">
+            <buttons>
+                <ToggleButton fx:id="statsToggle" selected="true" />
+                <ToggleButton fx:id="hGridToggle" selected="true" />
+                <ToggleButton fx:id="vGridToggle" selected="true" />
+                <ToggleButton fx:id="vSliderToggle" selected="false" />
+                <ToggleButton fx:id="hSliderToggle" selected="false" />
+            </buttons>
+        </SegmentedButton>
+        <Pane HBox.hgrow="ALWAYS" />
+        <SegmentedButton fx:id="toggleGroup" />
+        <SegmentedButton fx:id="group2">
+            <buttons>
+                <ToggleButton fx:id="normlToggle" selected="true" />
+                <ToggleButton fx:id="hydroToggle" selected="false" />
+                <ToggleButton fx:id="panelToggle" selected="false" />
+            </buttons>
+        </SegmentedButton>
+      <VBox.margin>
+         <Insets />
+      </VBox.margin>
+      <padding>
+         <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
+      </padding>
+    </HBox>
+    <TableView fx:id="table" editable="false" minHeight="0"
+               onDragDropped="#handleDragDropped"
+               onDragOver="#handleDragOver"
+               VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="pdbColumn" text="File" />
+            <TableColumn fx:id="numColumn" text="Atoms" />
+            <TableColumn fx:id="minColumn" text="Min" />
+            <TableColumn fx:id="maxColumn" text="Max" />
+            <TableColumn fx:id="avgColumn" text="Mean" />
+            <TableColumn fx:id="stdColumn" text="Standard Deviation" />
+        </columns>
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+        </columnResizePolicy>
+    </TableView>
+</VBox>
