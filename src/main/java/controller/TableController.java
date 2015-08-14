@@ -40,13 +40,11 @@ import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.controlsfx.control.SegmentedButton;
 import service.Service;
-import task.DataTask;
-import task.FileTask;
-import task.HetTask;
-import task.SeriesTask;
+import task.*;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.List;
@@ -100,7 +98,16 @@ public class TableController implements Initializable {
         ContextMenu contextMenu = new ContextMenu();
         MenuItem remove = new MenuItem("Remove");
         export = new MenuItem("Export");
-        contextMenu.getItems().addAll(remove, export);
+        MenuItem normalize = new MenuItem("Normalize .pdb");
+        normalize.setOnAction(event -> {
+            BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
+            for (Model model : table.getSelectionModel().getSelectedItems()) {
+                Path path = model.getPath();
+                Service.INSTANCE.execute(new ExtractTask(queue, path));
+                Service.INSTANCE.execute(new RewriteTask(queue, path.toString()));
+            }
+        });
+        contextMenu.getItems().addAll(remove, export, normalize);
         remove.setOnAction(event -> {
             ObservableList<Model> items = table.getSelectionModel().getSelectedItems();
             for (Model model : items) {
@@ -110,6 +117,7 @@ public class TableController implements Initializable {
             table.getItems().removeAll(items);
         });
         table.setContextMenu(contextMenu);
+
 
         table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         pdbColumn.setCellValueFactory(new PropertyValueFactory<>("pdb"));
@@ -176,6 +184,7 @@ public class TableController implements Initializable {
                     futureStats = Service.INSTANCE.submit(new HetTask(hetatm));
                     try {
                         Model model = future.get();
+                        model.setPath(file.toPath());
                         model.putValues("Hetero atoms", futureStats.get());
                         callback(model);
                         items.add(model);

@@ -25,6 +25,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.TableView;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
@@ -40,6 +41,7 @@ public class Model {
     private SimpleDoubleProperty skw = new SimpleDoubleProperty();
     private SimpleDoubleProperty krt = new SimpleDoubleProperty();
 
+    private Path path;
     private Set<String> set;
     private Table<String, String, Double> dehydrated;
     private Table<String, String, Double> unfiltered;
@@ -76,6 +78,14 @@ public class Model {
 
     public boolean containsKey(String key) {
         return series.containsKey(key);
+    }
+
+    public void setPath(Path path) {
+        this.path = path;
+    }
+
+    public Path getPath() {
+        return path;
     }
 
     public double[] getBounds(String key) {
