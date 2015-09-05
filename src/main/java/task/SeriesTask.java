@@ -17,9 +17,7 @@
 
 package task;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Table;
+import com.google.common.collect.*;
 import com.google.common.primitives.Doubles;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -54,58 +52,63 @@ public class SeriesTask implements Callable<SummaryStatistics> {
 
     @Override
     public SummaryStatistics call() throws Exception {
-        Table<String, Integer, Double> table = HashBasedTable.create();
+        Multimap<String, Double> multimap = LinkedListMultimap.create();
         String full = "All atoms"  + condition;
         String main = "Main chain" + condition;
         String side = "Side chain" + condition;
         String back = "Backbone"   + condition;
         String atom = "C-Alpha"    + condition;
-        int count = 0;
-        int index = 0;
-        double total = 0;
-        double sigma = 0;
-        double value;
+        int n = 0;
+        double sum = 0;
+        double tmp = 0;
         boolean flag = condition.contains("N");
         for (Map.Entry<String, Double> entry : map.entrySet()) {
             String key = entry.getKey();
-            value = entry.getValue();
-            total += value;
-            switch (key.substring(1, 3)) {
-                case "N ":
-                    if (count != 0) {
-                        if (sigma != 0) {
-                            table.put(side, index, sigma / (count - 4));
-                        }
-                        table.put(full, index, (total - value) / count);
-                        sigma = count = 0;
-                        total = value;
-                    }
-                    String resSeq = key.substring(8);
-                    index = Integer.parseInt(resSeq);
-                    break;
-                case "CA": table.put(atom, index, value); break;
-                case "C ": table.put(back, index, total / 3.0); break;
-                case "O ": table.put(main, index, total / 4.0); break;
-                default:
-                    sigma += value;
+            double val = entry.getValue();
+            String atm = key.substring(1, 3);
+            sum += val;
+            if (atm.equals("N ") && n != 0) {
+                double num = sum - val;
+                double rem = (num - tmp) / (n - 4);
+                if (!Double.isFinite(rem)) rem = 0;
+                multimap.put(full, num / n);
+                multimap.put(side, rem);
+                sum = val;
+                n = 0;
+            } else switch (atm) {
+                case "CA": multimap.put(atom, val);     break;
+                case "C ": multimap.put(back, sum / 3); break;
+                case "O ": multimap.put(main, sum / 4);
+                    tmp = sum;
                     break;
             }
-            count++;
+            n++;
         }
-        
-        for (String key : table.rowKeySet()) {
-            ObservableList<XYChart.Data<Number, Number>> data;
-            data = FXCollections.observableArrayList();
-            double[] values = Doubles.toArray(table.row(key).values());
+
+        if (n != 0) {
+            double aDouble = (sum - tmp) / (n - 4);
+            if (!Double.isFinite(aDouble)) aDouble = 0;
+            multimap.put(full, sum / n);
+            multimap.put(side, aDouble);
+        }
+
+        String str = Iterables.get(map.keySet(), 0);
+        String idx = str.substring(11).trim();
+        int resSeq = Integer.parseInt(idx);
+
+        for (String key : multimap.keySet()) {
+            ObservableList<XYChart.Data<Number, Number>> data = FXCollections.observableArrayList();
+            SummaryStatistics statistics = new SummaryStatistics();
+            double[] values = Doubles.toArray(multimap.get(key));
             if (flag) {
                 values = StatUtils.normalize(values);
             }
-            int i = 0;
-            SummaryStatistics statistics = new SummaryStatistics();
-            for (Integer resSeq : table.row(key).keySet()) {
-                double v = values[i];
-                statistics.addValue(v);
-                data.add(new XYChart.Data<>(resSeq, v));
+            int i = resSeq;
+            for (Double value : values) {
+                if (value != 0) {
+                    statistics.addValue(value);
+                    data.add(new XYChart.Data<>(i, value));
+                }
                 i++;
             }
             bounds.put(key, statistics);

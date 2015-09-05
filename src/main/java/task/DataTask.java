@@ -25,7 +25,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import model.Model;
+import misc.Model;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -39,62 +39,75 @@ public class DataTask implements Callable<Model> {
     private final BlockingQueue<String> queue;
     private final String name;
 
+    private int min, max;
+    private boolean isNewChain;
+    Multimap<String, Integer> map = HashMultimap.create();
+
     public DataTask(BlockingQueue<String> queue, String name) {
         this.queue = queue;
         this.name = name;
+        this.isNewChain = true;
+        this.min = Integer.MAX_VALUE;
+        this.max = Integer.MIN_VALUE;
     }
 
     @Override
     public Model call() throws Exception {
         Table<String, String, Double> dehydrated = Tables.newCustomTable(Maps.newHashMap(), Maps::newLinkedHashMap);
         Table<String, String, Double> unfiltered = Tables.newCustomTable(Maps.newHashMap(), Maps::newLinkedHashMap);
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
-        int pos = Integer.MIN_VALUE;
+
         while (true) {
             String line = queue.take();
             if (!line.equals("POISON")) {
-                String alt = line.substring(16, 17);
-                String key = line.substring(21, 22);
-                String tmp = line.substring(60, 66).trim();
-                String seq = line.substring(23, 26).trim();
-                String col = line.substring(12, 20) + seq;
-                double val = Double.parseDouble(tmp);
-                if (alt.equals(" ") || alt.equals("A")) {
+                char alt = line.charAt(16);
+                if (line.startsWith("ATOM") && (alt == (' ') || alt == 'A')) {
+                    String key = line.substring(21, 22);
+                    String tmp = line.substring(60, 66);
+                    String col = line.substring(12, 26);
+                    double val = Double.parseDouble(tmp);
                     unfiltered.put(key, col, val);
                     if (line.charAt(77) != 'H') {
                         dehydrated.put(key, col, val);
                     }
-                    int index = Integer.parseInt(seq);
-                    if (index != pos) {
-                        min = Math.min(min, index);
-                        max = Math.max(max, index);
-                        pos = index;
+                    if (isNewChain) {
+                        this.parseResSeq(line);
                     }
+                } else if (line.startsWith("TER")) {
+                    this.parseResSeq(line);
                 }
             } else {
                 break;
             }
         }
-        TableView<List<String>> view = index(min, max, dehydrated);
+        TableView<List<String>> view = index(dehydrated);
         return new Model(dehydrated, min, unfiltered, max, view, name);
     }
 
-    private TableView<List<String>> index(int min, int max, Table<String, String, Double> table) {
+    private void parseResSeq(String line) {
+        String str = line.substring(23, 26).trim();
+        int resSeq = Integer.parseInt(str);
+        min = Math.min(min, resSeq);
+        max = Math.max(max, resSeq);
+        isNewChain = !isNewChain;
+    }
+
+    private TableView<List<String>> index(Table<String, String, Double> table) {
         ObservableList<List<String>> collection = FXCollections.observableArrayList();
         List<TableColumn<List<String>, String>> columns = Lists.newArrayList();
         columns.add(newColumn(0, "#"));
+
         int difference = max - min;
         for (int i = 0; i < difference + 1; i++) {
             String index = String.valueOf(min + i);
             collection.add(Lists.newArrayList(index));
         }
+
         int column = 1;
         for (String row : table.rowKeySet()) {
             int current = Integer.MIN_VALUE;
             for (String key : table.row(row).keySet()) {
                 String resName = key.substring(5, 8);
-                String resSeq = key.substring(8);
+                String resSeq = key.substring(11).trim();
                 int index = Integer.parseInt(resSeq);
                 int position = index - min;
                 if (current != position) {
@@ -112,6 +125,7 @@ public class DataTask implements Callable<Model> {
             columns.add(newColumn(column, row));
             column++;
         }
+
         TableView<List<String>> view = new TableView<>();
         view.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         view.setEditable(false);

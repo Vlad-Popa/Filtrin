@@ -32,7 +32,9 @@ public class FileTask implements Runnable {
     private final BlockingQueue<String> queue2;
     private final File file;
 
-    public FileTask(BlockingQueue<String> queue1, BlockingQueue<String> queue2, File file) {
+    public FileTask(BlockingQueue<String> queue1,
+                    BlockingQueue<String> queue2,
+                    File file) {
         this.queue1 = queue1;
         this.queue2 = queue2;
         this.file = file;
@@ -42,9 +44,8 @@ public class FileTask implements Runnable {
     public void run() {
         try (Stream<String> lines = Files.lines(file.toPath())) {
             for (String line : (Iterable<String>) lines::iterator) {
-                if (line.startsWith("ATOM")) {
-                    queue1.put(line);
-                } else if (line.startsWith("HETATM")) {
+                queue1.put(line);
+                if (line.startsWith("HETATM")) {
                     queue2.put(line);
                 }
             }

@@ -1,6 +1,23 @@
+/*
+ * Copyright (C) 2015 Vlad Popa
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package task;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.math3.stat.StatUtils;
 
@@ -8,9 +25,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -28,17 +43,19 @@ public class RewriteTask implements Runnable {
 
     @Override
     public void run() {
-        List<Double> doubles = Lists.newLinkedList();
-        List<String> list = Lists.newLinkedList();
+        Multimap<String, String> chains = LinkedListMultimap.create();
+        Multimap<String, Double> values = LinkedListMultimap.create();
         while (true) {
             try {
                 String line = queue.take();
                 if (!line.equals("POISON")) {
+                    String key = line.substring(21, 22);
                     if (line.startsWith("ATOM")) {
-                        String tmp = line.substring(60, 66).trim();
-                        doubles.add(Double.parseDouble(tmp));
+                        String tmp = line.substring(60, 66);
+                        double val = Double.parseDouble(tmp);
+                        values.put(key, val);
                     }
-                    list.add(line);
+                    chains.put(key, line);
                 } else {
                     break;
                 }
@@ -46,26 +63,25 @@ public class RewriteTask implements Runnable {
                 e.printStackTrace();
             }
         }
-        double[] array = Doubles.toArray(doubles);
-        double[] values = StatUtils.normalize(array);
-        int i = 0;
+
         File file = new File(name);
-        NumberFormat format = DecimalFormat.getInstance();
-        format.setMaximumFractionDigits(3);
-        format.setMinimumFractionDigits(3);
-        try (FileWriter fw = new FileWriter(file);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-            for (String line : list) {
-                if (line.startsWith("ATOM")) {
-                    String value = format.format(values[i]);
-                    if (value.length() > 5) value = value.substring(0, 5);
-                    String string = line.substring(0, 60) + " " + value + line.substring(66);
-                    bw.write(string);
-                    bw.newLine();
-                    i++;
-                } else {
-                    bw.write(line);
-                    bw.newLine();
+        try (FileWriter fw = new FileWriter(file); BufferedWriter bw = new BufferedWriter(fw)) {
+            for (String key : chains.keySet()) {
+                Collection<Double> collection = values.get(key);
+                double[] doubles = Doubles.toArray(collection);
+                double[] normals = StatUtils.normalize(doubles);
+                int i = 0;
+                for (String line : chains.get(key)) {
+                    if (line.startsWith("ATOM")) {
+                        String factor = String.valueOf(normals[i]).substring(0, 5);
+                        String string = line.substring(0, 60) + ' ' + factor + line.substring(66);
+                        bw.write(string);
+                        bw.newLine();
+                        i++;
+                    } else {
+                        bw.write(line);
+                        bw.newLine();
+                    }
                 }
             }
         } catch (IOException e) {

@@ -28,13 +28,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.util.StringConverter;
-import model.Model;
+import misc.Model;
 import org.apache.commons.math3.stat.descriptive.AggregateSummaryStatistics;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -42,6 +41,7 @@ import org.controlsfx.control.SegmentedButton;
 import service.Service;
 import task.*;
 
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
@@ -84,6 +84,10 @@ public class TableController implements Initializable {
 
     private ObservableList<String> files = FXCollections.observableArrayList();
 
+
+    private FileNameExtensionFilter filter = new FileNameExtensionFilter("PDB", "pdb");
+
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         group1.setToggleGroup(null);
@@ -107,6 +111,7 @@ public class TableController implements Initializable {
                 Service.INSTANCE.execute(new RewriteTask(queue, path.toString()));
             }
         });
+
         contextMenu.getItems().addAll(remove, export, normalize);
         remove.setOnAction(event -> {
             ObservableList<Model> items = table.getSelectionModel().getSelectedItems();
@@ -120,12 +125,6 @@ public class TableController implements Initializable {
 
 
         table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        pdbColumn.setCellValueFactory(new PropertyValueFactory<>("pdb"));
-        numColumn.setCellValueFactory(new PropertyValueFactory<>("num"));
-        minColumn.setCellValueFactory(new PropertyValueFactory<>("min"));
-        maxColumn.setCellValueFactory(new PropertyValueFactory<>("max"));
-        avgColumn.setCellValueFactory(new PropertyValueFactory<>("avg"));
-        stdColumn.setCellValueFactory(new PropertyValueFactory<>("std"));
 
         StringConverter<Double> converter = new StringConverter<Double>() {
             private final NumberFormat formatter = NumberFormat.getNumberInstance();
@@ -170,18 +169,16 @@ public class TableController implements Initializable {
             List<Model> items = Lists.newArrayList();
             for (File file : dragboard.getFiles()) {
                 String name = file.getName();
-                int index = name.lastIndexOf(".");
-                String ext = name.substring(index);
-                if (!files.contains(name) && ext.equals(".pdb")) {
+                if (!files.contains(name) && filter.accept(file)) {
                     files.add(name);
-                    BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
-                    BlockingQueue<String> hetatm = new ArrayBlockingQueue<>(200);
+                    BlockingQueue<String> queue1 = new ArrayBlockingQueue<>(200);
+                    BlockingQueue<String> queue2 = new ArrayBlockingQueue<>(200);
                     ListenableFuture<Model> future;
                     ListenableFuture<StatisticalSummary> futureStats;
 
-                    Service.INSTANCE.execute(new FileTask(queue, hetatm, file));
-                    future = Service.INSTANCE.submit(new DataTask(queue, name));
-                    futureStats = Service.INSTANCE.submit(new HetTask(hetatm));
+                    Service.INSTANCE.execute(new FileTask(queue1, queue2, file));
+                    future = Service.INSTANCE.submit(new DataTask(queue1, name));
+                    futureStats = Service.INSTANCE.submit(new HetTask(queue2));
                     try {
                         Model model = future.get();
                         model.setPath(file.toPath());

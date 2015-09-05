@@ -16,7 +16,7 @@
 
 
 
-package model;
+package misc;
 
 import com.google.common.collect.*;
 import javafx.beans.property.SimpleDoubleProperty;
