@@ -18,7 +18,11 @@
 
 package controller;
 
-import com.google.common.collect.*;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Table;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -26,7 +30,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.DragEvent;
@@ -34,10 +37,9 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.util.StringConverter;
 import misc.Model;
-import org.apache.commons.math3.stat.descriptive.AggregateSummaryStatistics;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.controlsfx.control.SegmentedButton;
+import task.SeriesTask;
+import rewrite.Wrapper;
 import service.Service;
 import task.*;
 
@@ -48,7 +50,6 @@ import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -83,9 +84,12 @@ public class TableController implements Initializable {
     private MenuItem export;
 
     private ObservableList<String> files = FXCollections.observableArrayList();
-
-
     private FileNameExtensionFilter filter = new FileNameExtensionFilter("PDB", "pdb");
+
+
+    private AsyncFunction<Multimap<String, String>, TableView<List<String>>> function1;
+    private AsyncFunction<Multimap<String, String>, Table<String, String, Double>> function2;
+    private AsyncFunction<Multimap<String, String>, List<Wrapper>> function3;
 
 
     @Override
@@ -107,7 +111,7 @@ public class TableController implements Initializable {
             BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
             for (Model model : table.getSelectionModel().getSelectedItems()) {
                 Path path = model.getPath();
-                Service.INSTANCE.execute(new ExtractTask(queue, path));
+                Service.INSTANCE.execute(new FileTask(queue, path));
                 Service.INSTANCE.execute(new RewriteTask(queue, path.toString()));
             }
         });
@@ -122,7 +126,6 @@ public class TableController implements Initializable {
             table.getItems().removeAll(items);
         });
         table.setContextMenu(contextMenu);
-
 
         table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
@@ -148,6 +151,19 @@ public class TableController implements Initializable {
         maxColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
         avgColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
         stdColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
+
+        function1 = multimap -> Service.INSTANCE.submit(new IndexTask(multimap));
+        function2 = multimap -> Service.INSTANCE.submit(new HetatmTask(multimap));
+        function3 = multimap -> {
+            List<ListenableFuture<Wrapper>> tasks = Lists.newArrayList();
+            for (String key : multimap.keySet()) {
+                if (key.length() == 1) {
+                    Collection<String> collection = multimap.get(key);
+                    tasks.add(Service.INSTANCE.submit(new SeriesTask(collection, key)));
+                }
+            }
+            return Futures.allAsList(tasks);
+        };
     }
 
     @FXML
@@ -171,20 +187,20 @@ public class TableController implements Initializable {
                 String name = file.getName();
                 if (!files.contains(name) && filter.accept(file)) {
                     files.add(name);
-                    BlockingQueue<String> queue1 = new ArrayBlockingQueue<>(200);
-                    BlockingQueue<String> queue2 = new ArrayBlockingQueue<>(200);
-                    ListenableFuture<Model> future;
-                    ListenableFuture<StatisticalSummary> futureStats;
+                    BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
+                    Service.INSTANCE.execute(new FileTask(queue, file.toPath()));
+                    ListenableFuture<Multimap<String, String>> future1 = Service.INSTANCE.submit(new DataTask(queue));
+                    ListenableFuture<TableView<List<String>>> future2 = Futures.transform(future1, function1);
+                    ListenableFuture<Table<String, String, Double>> future3 = Futures.transform(future1, function2);
+                    ListenableFuture<List<Wrapper>> future4 = Futures.transform(future1, function3);
 
-                    Service.INSTANCE.execute(new FileTask(queue1, queue2, file));
-                    future = Service.INSTANCE.submit(new DataTask(queue1, name));
-                    futureStats = Service.INSTANCE.submit(new HetTask(queue2));
                     try {
-                        Model model = future.get();
-                        model.setPath(file.toPath());
-                        model.putValues("Hetero atoms", futureStats.get());
-                        callback(model);
-                        items.add(model);
+                        List<Wrapper> wrappers = future4.get();
+                        Multimap<String, String> multimap = future1.get();
+                        TableView<List<String>> tableView = future2.get();
+                        Table<String, String, Double> table = future3.get();
+
+
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
@@ -202,28 +218,7 @@ public class TableController implements Initializable {
     }
 
     public void callback(Model model) {
-        Multimap<String, XYChart.Series<Number, Number>> series = Multimaps.synchronizedMultimap(HashMultimap.create());
-        Multimap<String, SummaryStatistics> bounds = Multimaps.synchronizedMultimap(HashMultimap.create());
 
-        List<SeriesTask> list = Lists.newArrayList();
-        Table<String, String, Double> data = model.getTable(hydroToggle.isSelected());
-        String condition = getValue();
-        for (String key : data.rowKeySet()) {
-            Map<String, Double> map = data.row(key);
-            list.add(new SeriesTask(condition, key, map, series, bounds));
-        }
-
-        try {
-            Service.INSTANCE.invokeAll(list);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        model.putAllSeries(series);
-        for (String key : bounds.keySet()) {
-            Collection<SummaryStatistics> stats = bounds.get(key);
-            model.putValues(key, AggregateSummaryStatistics.aggregate(stats));
-        }
     }
 
     public ReadOnlyObjectProperty<Model> selectedItem() {

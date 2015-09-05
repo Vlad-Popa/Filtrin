@@ -17,134 +17,64 @@
 
 package task;
 
-import com.google.common.collect.*;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
-import misc.Model;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 
 /**
  * @author Vlad Popa on 7/17/2015.
  */
-public class DataTask implements Callable<Model> {
+public class DataTask implements Callable<Multimap<String, String>> {
 
     private final BlockingQueue<String> queue;
-    private final String name;
+    private int min;
+    private int max;
+    private boolean nID;
 
-    private int min, max;
-    private boolean isNewChain;
-    Multimap<String, Integer> map = HashMultimap.create();
-
-    public DataTask(BlockingQueue<String> queue, String name) {
+    public DataTask(BlockingQueue<String> queue) {
         this.queue = queue;
-        this.name = name;
-        this.isNewChain = true;
         this.min = Integer.MAX_VALUE;
         this.max = Integer.MIN_VALUE;
+        this.nID = true;
     }
 
     @Override
-    public Model call() throws Exception {
-        Table<String, String, Double> dehydrated = Tables.newCustomTable(Maps.newHashMap(), Maps::newLinkedHashMap);
-        Table<String, String, Double> unfiltered = Tables.newCustomTable(Maps.newHashMap(), Maps::newLinkedHashMap);
-
+    public Multimap<String, String> call() throws Exception {
+        ImmutableMultimap.Builder<String, String> multimap = ImmutableMultimap.builder();
         while (true) {
             String line = queue.take();
             if (!line.equals("POISON")) {
                 char alt = line.charAt(16);
-                if (line.startsWith("ATOM") && (alt == (' ') || alt == 'A')) {
-                    String key = line.substring(21, 22);
-                    String tmp = line.substring(60, 66);
-                    String col = line.substring(12, 26);
-                    double val = Double.parseDouble(tmp);
-                    unfiltered.put(key, col, val);
-                    if (line.charAt(77) != 'H') {
-                        dehydrated.put(key, col, val);
+                if (line.startsWith("TER")) {
+                    this.getResSeq(line);
+                } else if (alt == (' ') || alt == 'A') {
+                    if (line.startsWith("ATOM")) {
+                        String key = line.substring(21, 22);
+                        String val = line.substring(12, 66);
+                        multimap.put(key, val);
+                        if (nID) this.getResSeq(line);
+                    } else if (line.startsWith("HETATM")) {
+                        String key = line.substring(18, 20);
+                        String val = line.substring(60, 66);
+                        multimap.put(key, val);
                     }
-                    if (isNewChain) {
-                        this.parseResSeq(line);
-                    }
-                } else if (line.startsWith("TER")) {
-                    this.parseResSeq(line);
                 }
             } else {
                 break;
             }
         }
-        TableView<List<String>> view = index(dehydrated);
-        return new Model(dehydrated, min, unfiltered, max, view, name);
+        multimap.put("MIN", String.valueOf(min));
+        multimap.put("MAX", String.valueOf(max));
+        return multimap.build();
     }
 
-    private void parseResSeq(String line) {
+    private void getResSeq(String line) {
         String str = line.substring(23, 26).trim();
         int resSeq = Integer.parseInt(str);
         min = Math.min(min, resSeq);
         max = Math.max(max, resSeq);
-        isNewChain = !isNewChain;
-    }
-
-    private TableView<List<String>> index(Table<String, String, Double> table) {
-        ObservableList<List<String>> collection = FXCollections.observableArrayList();
-        List<TableColumn<List<String>, String>> columns = Lists.newArrayList();
-        columns.add(newColumn(0, "#"));
-
-        int difference = max - min;
-        for (int i = 0; i < difference + 1; i++) {
-            String index = String.valueOf(min + i);
-            collection.add(Lists.newArrayList(index));
-        }
-
-        int column = 1;
-        for (String row : table.rowKeySet()) {
-            int current = Integer.MIN_VALUE;
-            for (String key : table.row(row).keySet()) {
-                String resName = key.substring(5, 8);
-                String resSeq = key.substring(11).trim();
-                int index = Integer.parseInt(resSeq);
-                int position = index - min;
-                if (current != position) {
-                    List<String> list = collection.get(position);
-                    int size = list.size();
-                    if (list.size() < column) {
-                        for (int i = size; i < column; i++) {
-                            list.add(" ");
-                        }
-                    }
-                    list.add(resName);
-                    current = position;
-                }
-            }
-            columns.add(newColumn(column, row));
-            column++;
-        }
-
-        TableView<List<String>> view = new TableView<>();
-        view.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        view.setEditable(false);
-        view.getColumns().addAll(columns);
-        view.getItems().addAll(collection);
-        VBox.setVgrow(view, Priority.ALWAYS);
-        return view;
-    }
-
-    private TableColumn<List<String>, String> newColumn(int index, String title) {
-        TableColumn<List<String>, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(p -> {
-            if (index < p.getValue().size()) {
-                return new SimpleStringProperty((p.getValue().get(index)));
-            } else {
-                return null;
-            }
-        });
-        column.setSortable(false);
-        return column;
+        nID = !nID;
     }
 }

@@ -5,7 +5,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableView;
 import service.Service;
-import task.ExtractTask;
+import task.FileTask;
 import task.RewriteTask;
 
 import java.nio.file.Path;
@@ -26,7 +26,7 @@ public class TableMenu extends ContextMenu {
             BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
             for (Model model : tableView.getSelectionModel().getSelectedItems()) {
                 Path path = model.getPath();
-                Service.INSTANCE.execute(new ExtractTask(queue, path));
+                Service.INSTANCE.execute(new FileTask(queue, path));
                 Service.INSTANCE.execute(new RewriteTask(queue, path.toString()));
             }
         });

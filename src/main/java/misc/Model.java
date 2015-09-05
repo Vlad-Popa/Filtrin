@@ -43,7 +43,7 @@ public class Model {
 
     private Path path;
     private Set<String> set;
-    private Table<String, String, Double> dehydrated;
+
     private Table<String, String, Double> unfiltered;
     private Table<String, String, Double> values;
     private TableView<List<String>> view;
@@ -52,16 +52,17 @@ public class Model {
     private double lowerBounds;
     private double upperBounds;
 
-    public Model(Table<String, String, Double> dehydrated, int min,
-                 Table<String, String, Double> unfiltered, int max,
-                 TableView<List<String>> collection, String name) {
+    private int minima, maxima;
+
+    public Model(Table<String, String, Double> unfiltered, int  min, int max, String name) {
         this.series = TreeMultimap.create(Ordering.natural(), Ordering.usingToString());
         this.pdb.set(name);
-        this.set = dehydrated.rowKeySet();
-        this.view = collection;
+        this.set = unfiltered.rowKeySet();
         this.values = HashBasedTable.create();
-        this.dehydrated = dehydrated;
         this.unfiltered = unfiltered;
+
+        this.minima = min;
+        this.maxima = max;
         if (min == 1) {
             min = 0;
         } else if (min % 10 != 0) {
@@ -74,6 +75,18 @@ public class Model {
         }
         this.lowerBounds = min;
         this.upperBounds = max;
+    }
+
+    public void setCollection(TableView<List<String>> view) {
+        this.view = view;
+    }
+
+    public int getMinimum() {
+        return minima;
+    }
+
+    public int getMaximum() {
+        return maxima;
     }
 
     public boolean containsKey(String key) {
@@ -105,11 +118,7 @@ public class Model {
     }
 
     public Table<String, String, Double> getTable(boolean value) {
-        if (value) {
-            return unfiltered;
-        } else {
-            return dehydrated;
-        }
+        return unfiltered;
     }
 
     public void putValues(String key, StatisticalSummary stats) {
@@ -117,18 +126,10 @@ public class Model {
         if (key.startsWith("Main chain")) n *= 4;
         if (key.startsWith("Backbone")) n *= 3;
         if (key.startsWith("All atoms")) {
-            if (!key.contains("H")) {
-                n = dehydrated.size();
-            } else {
-                n = unfiltered.size();
-            }
+            n = unfiltered.size();
         }
         if (key.startsWith("Side chain")) {
-            if (!key.contains("H")) {
-                n = (dehydrated.size()) - (n * 4);
-            } else {
-                n = (unfiltered.size()) - (n * 4);
-            }
+            n = (unfiltered.size()) - (n * 4);
         }
         values.put(key, "num", (double) n);
         values.put(key, "min", stats.getMin());

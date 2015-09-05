@@ -63,7 +63,6 @@ public class RewriteTask implements Runnable {
                 e.printStackTrace();
             }
         }
-
         File file = new File(name);
         try (FileWriter fw = new FileWriter(file); BufferedWriter bw = new BufferedWriter(fw)) {
             for (String key : chains.keySet()) {
