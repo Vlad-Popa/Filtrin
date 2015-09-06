@@ -43,26 +43,28 @@ public class IndexTask implements Callable<TableView<List<String>>> {
 
         int column = 1;
         for (String key : multimap.keySet()) {
-            int current = Integer.MIN_VALUE;
-            for (String value : multimap.get(key)) {
-                String resName = value.substring(5, 8);
-                String resSeq = value.substring(11, 14).trim();
-                int index = Integer.parseInt(resSeq);
-                int position = index - min;
-                if (current != position) {
-                    List<String> list = collection.get(position);
-                    int size = list.size();
-                    if (list.size() < column) {
-                        for (int i = size; i < column; i++) {
-                            list.add(" ");
+            if (key.length() == 1) {
+                int current = Integer.MIN_VALUE;
+                for (String value : multimap.get(key)) {
+                    String resName = value.substring(5, 8);
+                    String resSeq = value.substring(11, 14).trim();
+                    int index = Integer.parseInt(resSeq);
+                    int position = index - min;
+                    if (current != position) {
+                        List<String> list = collection.get(position);
+                        int size = list.size();
+                        if (list.size() < column) {
+                            for (int i = size; i < column; i++) {
+                                list.add(" ");
+                            }
                         }
+                        list.add(resName);
+                        current = position;
                     }
-                    list.add(resName);
-                    current = position;
                 }
+                columns.add(newColumn(column, key));
+                column++;
             }
-            columns.add(newColumn(column, key));
-            column++;
         }
 
         TableView<List<String>> view = new TableView<>();

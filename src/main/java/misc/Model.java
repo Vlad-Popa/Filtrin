@@ -52,8 +52,6 @@ public class Model {
     private double lowerBounds;
     private double upperBounds;
 
-    private int minima, maxima;
-
     public Model(Table<String, String, Double> unfiltered, int  min, int max, String name) {
         this.series = TreeMultimap.create(Ordering.natural(), Ordering.usingToString());
         this.pdb.set(name);
@@ -61,8 +59,7 @@ public class Model {
         this.values = HashBasedTable.create();
         this.unfiltered = unfiltered;
 
-        this.minima = min;
-        this.maxima = max;
+
         if (min == 1) {
             min = 0;
         } else if (min % 10 != 0) {
@@ -79,14 +76,6 @@ public class Model {
 
     public void setCollection(TableView<List<String>> view) {
         this.view = view;
-    }
-
-    public int getMinimum() {
-        return minima;
-    }
-
-    public int getMaximum() {
-        return maxima;
     }
 
     public boolean containsKey(String key) {

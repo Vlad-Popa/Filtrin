@@ -48,13 +48,13 @@ public class DataTask implements Callable<Multimap<String, String>> {
             if (!line.equals("POISON")) {
                 char alt = line.charAt(16);
                 if (line.startsWith("TER")) {
-                    this.getResSeq(line);
+                    this.updateResSeq(line);
                 } else if (alt == (' ') || alt == 'A') {
                     if (line.startsWith("ATOM")) {
                         String key = line.substring(21, 22);
                         String val = line.substring(12, 66);
                         multimap.put(key, val);
-                        if (nID) this.getResSeq(line);
+                        if (nID) this.updateResSeq(line);
                     } else if (line.startsWith("HETATM")) {
                         String key = line.substring(18, 20);
                         String val = line.substring(60, 66);
@@ -70,7 +70,7 @@ public class DataTask implements Callable<Multimap<String, String>> {
         return multimap.build();
     }
 
-    private void getResSeq(String line) {
+    private void updateResSeq(String line) {
         String str = line.substring(23, 26).trim();
         int resSeq = Integer.parseInt(str);
         min = Math.min(min, resSeq);

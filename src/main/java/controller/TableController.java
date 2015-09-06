@@ -38,7 +38,7 @@ import javafx.scene.input.TransferMode;
 import javafx.util.StringConverter;
 import misc.Model;
 import org.controlsfx.control.SegmentedButton;
-import task.SeriesTask;
+import rewrite.NewModel;
 import rewrite.Wrapper;
 import service.Service;
 import task.*;
@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author Vlad Popa on 7/25/2015.
@@ -89,7 +88,8 @@ public class TableController implements Initializable {
 
     private AsyncFunction<Multimap<String, String>, TableView<List<String>>> function1;
     private AsyncFunction<Multimap<String, String>, Table<String, String, Double>> function2;
-    private AsyncFunction<Multimap<String, String>, List<Wrapper>> function3;
+    private AsyncFunction<Multimap<String, String>, List<Multimap<String, Double>>> function3;
+    private AsyncFunction<List<Multimap<String, Double>>, List<Wrapper>> function4;
 
 
     @Override
@@ -155,14 +155,21 @@ public class TableController implements Initializable {
         function1 = multimap -> Service.INSTANCE.submit(new IndexTask(multimap));
         function2 = multimap -> Service.INSTANCE.submit(new HetatmTask(multimap));
         function3 = multimap -> {
-            List<ListenableFuture<Wrapper>> tasks = Lists.newArrayList();
+            List<ListenableFuture<Multimap<String, Double>>> tasks = Lists.newArrayList();
             for (String key : multimap.keySet()) {
                 if (key.length() == 1) {
                     Collection<String> collection = multimap.get(key);
-                    tasks.add(Service.INSTANCE.submit(new SeriesTask(collection, key)));
+                    tasks.add(Service.INSTANCE.submit(new SortTask(collection, key)));
                 }
             }
             return Futures.allAsList(tasks);
+        };
+        function4 = list -> {
+            List<ListenableFuture<Wrapper>> wrappers = Lists.newArrayList();
+            for (Multimap<String, Double> multimap : list) {
+                wrappers.add(Service.INSTANCE.submit(new SeriesTask(multimap)));
+            }
+            return Futures.allAsList(wrappers);
         };
     }
 
@@ -182,35 +189,26 @@ public class TableController implements Initializable {
         boolean success = false;
         if (dragboard.hasFiles()) {
             success = true;
-            List<Model> items = Lists.newArrayList();
+            List<NewModel> items = Lists.newArrayList();
             for (File file : dragboard.getFiles()) {
                 String name = file.getName();
                 if (!files.contains(name) && filter.accept(file)) {
                     files.add(name);
+                    Path path = file.toPath();
                     BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
-                    Service.INSTANCE.execute(new FileTask(queue, file.toPath()));
-                    ListenableFuture<Multimap<String, String>> future1 = Service.INSTANCE.submit(new DataTask(queue));
-                    ListenableFuture<TableView<List<String>>> future2 = Futures.transform(future1, function1);
-                    ListenableFuture<Table<String, String, Double>> future3 = Futures.transform(future1, function2);
-                    ListenableFuture<List<Wrapper>> future4 = Futures.transform(future1, function3);
+                    Service.INSTANCE.execute(new FileTask(queue, path));
 
-                    try {
-                        List<Wrapper> wrappers = future4.get();
-                        Multimap<String, String> multimap = future1.get();
-                        TableView<List<String>> tableView = future2.get();
-                        Table<String, String, Double> table = future3.get();
+                    ListenableFuture<Multimap<String, String>>       future1 = Service.INSTANCE.submit(new DataTask(queue));
+                    ListenableFuture<TableView<List<String>>>        future2 = Futures.transform(future1, function1);
+                    ListenableFuture<Table<String, String, Double>>  future3 = Futures.transform(future1, function2);
+                    ListenableFuture<List<Multimap<String, Double>>> future4 = Futures.transform(future1, function3);
+                    ListenableFuture<List<Wrapper>>                  future5 = Futures.transform(future4, function4);
 
-
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
                 }
             }
             if (!items.isEmpty()) {
                 int size = items.size();
-                Model model = items.get(size - 1);
-                table.getItems().addAll(items);
-                table.getSelectionModel().select(model);
+                NewModel model = items.get(size - 1);
             }
         }
         event.setDropCompleted(success);
