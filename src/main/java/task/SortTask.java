@@ -3,7 +3,6 @@ package task;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import com.google.common.primitives.Doubles;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
@@ -26,45 +25,51 @@ public class SortTask implements Callable<Multimap<String, Double>> {
         ImmutableMultimap.Builder<String, Double> multimap = ImmutableMultimap.builder();
         double sum = 0;
         double tmp = 0;
-        double hyd = 0;
+        double h = 0;
         int n = 0;
         int i = 0;
         for (String line : collection) {
             String atm = line.substring(0, 4);
-            String fac = line.substring(47, 53);
+            String fac = line.substring(48, 54);
             double val = Double.parseDouble(fac);
             sum += val;
-            if (atm.contains("H")) {
-                hyd += val;
-                i++;
-            } else if (atm.equals(" N  ") && n != 0) {
-                double num = sum - val;
-                double rem = (num - tmp) / (n - 4);
-                double re2 = (num - tmp) / (n - 4 - i);
-                if (!Doubles.isFinite(rem)) rem = re2 = 0;
-                multimap.put("All atomsH", num / n);
-                multimap.put("All atoms", (num - hyd) / (n - i));
-                multimap.put("Side chainH", rem);
-                multimap.put("Side chain",  re2);
-                hyd = n = i = 0;
-                sum = val;
-            } else switch (atm) {
+            switch (atm) {
+                case " N  ":
+                    if (n != 0) {
+                        double num = sum - val;
+                        double rem = tmp != 0 ? tmp / (n - 4) : 0;
+                        double re2 = tmp != 0 ? (tmp - h) / (n - i - 4) : 0;
+                        if (Double.isNaN(re2)) re2 = h / i;
+                        multimap.put("All atomsH",  num / n);
+                        multimap.put("All atoms",  (num - h) / (n - i));
+                        multimap.put("Side chainH", rem);
+                        multimap.put("Side chain",  re2);
+                        n = i = 0;
+                        tmp = h = 0;
+                        sum = val;
+                    }
+                    break;
                 case " CA ": multimap.put("C-Alpha",    val);     break;
                 case " C  ": multimap.put("Backbone",   sum / 3); break;
-                case " O  ": multimap.put("Main chain", sum / 4);
-                    tmp = sum;
+                case " O  ": multimap.put("Main chain", sum / 4); break;
+                default:
+                    if (atm.contains("H")) {
+                        h += val;
+                        i++;
+                    }
+                    tmp += val;
                     break;
             }
             n++;
         }
         if (n != 0) {
-            double rem = (sum - tmp) / (n - 4);
-            double re2 = (sum - tmp) / (n - 4 - i);
-            if (!Double.isFinite(rem)) rem = re2 = 0;
+            double rem = tmp != 0 ? tmp / (n - 4) : 0;
+            double re2 = tmp != 0 ? (tmp - h) / (n - i - 4) : 0;
+            if (Double.isNaN(re2)) re2 = h / i;
             multimap.put("All atomsH", sum / n);
-            multimap.put("All atoms", (sum - hyd) / (n - i));
+            multimap.put("All atoms", (sum - h) / (n - i));
             multimap.put("Side chainH", rem);
-            multimap.put("Side chain", re2);
+            multimap.put("Side chain",  re2);
         }
 
         String str = Iterables.get(collection, 0);

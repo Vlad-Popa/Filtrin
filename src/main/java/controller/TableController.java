@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -36,15 +35,14 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.util.StringConverter;
-import misc.Model;
 import org.controlsfx.control.SegmentedButton;
-import rewrite.NewModel;
-import rewrite.Wrapper;
-import service.Service;
+import misc.Model;
+import misc.TableMenu;
+import misc.Wrapper;
+import misc.Service;
 import task.*;
 
 import javax.swing.filechooser.FileNameExtensionFilter;
-import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
 import java.text.NumberFormat;
@@ -53,6 +51,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Vlad Popa on 7/25/2015.
@@ -61,7 +60,6 @@ public class TableController implements Initializable {
 
     @FXML private TableView<Model> table;
     @FXML private TableColumn<Model, String> pdbColumn;
-    @FXML private TableColumn<Model, Double> numColumn;
     @FXML private TableColumn<Model, Double> minColumn;
     @FXML private TableColumn<Model, Double> maxColumn;
     @FXML private TableColumn<Model, Double> avgColumn;
@@ -69,7 +67,7 @@ public class TableController implements Initializable {
 
     @FXML private SegmentedButton group2;
     @FXML private SegmentedButton group1;
-    @FXML private SegmentedButton toggleGroup;
+    @FXML private SegmentedButton group3;
     @FXML private ToggleButton hSliderToggle;
     @FXML private ToggleButton vSliderToggle;
     @FXML private ToggleButton panelToggle;
@@ -79,54 +77,25 @@ public class TableController implements Initializable {
     @FXML private ToggleButton hGridToggle;
     @FXML private ToggleButton vGridToggle;
 
-
-    private MenuItem export;
-
-    private ObservableList<String> files = FXCollections.observableArrayList();
     private FileNameExtensionFilter filter = new FileNameExtensionFilter("PDB", "pdb");
-
-
     private AsyncFunction<Multimap<String, String>, TableView<List<String>>> function1;
     private AsyncFunction<Multimap<String, String>, Table<String, String, Double>> function2;
     private AsyncFunction<Multimap<String, String>, List<Multimap<String, Double>>> function3;
     private AsyncFunction<List<Multimap<String, Double>>, List<Wrapper>> function4;
 
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         group1.setToggleGroup(null);
         group2.setToggleGroup(null);
-        toggleGroup.setToggleGroup(null);
+        group3.setToggleGroup(null);
 
         Tooltip.install(normlToggle, new Tooltip("Normalize Values"));
         Tooltip.install(hydroToggle, new Tooltip("Include Hydrogen Atoms"));
 
+        TableMenu menu = new TableMenu();
+        menu.setTableView(table);
+
         table.setPlaceholder(new Label("Drag and drop your .pdb files here"));
-
-        ContextMenu contextMenu = new ContextMenu();
-        MenuItem remove = new MenuItem("Remove");
-        export = new MenuItem("Export");
-        MenuItem normalize = new MenuItem("Normalize .pdb");
-        normalize.setOnAction(event -> {
-            BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
-            for (Model model : table.getSelectionModel().getSelectedItems()) {
-                Path path = model.getPath();
-                Service.INSTANCE.execute(new FileTask(queue, path));
-                Service.INSTANCE.execute(new RewriteTask(queue, path.toString()));
-            }
-        });
-
-        contextMenu.getItems().addAll(remove, export, normalize);
-        remove.setOnAction(event -> {
-            ObservableList<Model> items = table.getSelectionModel().getSelectedItems();
-            for (Model model : items) {
-                String name = model.pdbProperty().get();
-                files.remove(name);
-            }
-            table.getItems().removeAll(items);
-        });
-        table.setContextMenu(contextMenu);
-
         table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         StringConverter<Double> converter = new StringConverter<Double>() {
@@ -146,7 +115,6 @@ public class TableController implements Initializable {
             }
         };
 
-        numColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
         minColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
         maxColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
         avgColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter));
@@ -189,42 +157,41 @@ public class TableController implements Initializable {
         boolean success = false;
         if (dragboard.hasFiles()) {
             success = true;
-            List<NewModel> items = Lists.newArrayList();
-            for (File file : dragboard.getFiles()) {
-                String name = file.getName();
-                if (!files.contains(name) && filter.accept(file)) {
-                    files.add(name);
-                    Path path = file.toPath();
-                    BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
-                    Service.INSTANCE.execute(new FileTask(queue, path));
-
-                    ListenableFuture<Multimap<String, String>>       future1 = Service.INSTANCE.submit(new DataTask(queue));
-                    ListenableFuture<TableView<List<String>>>        future2 = Futures.transform(future1, function1);
-                    ListenableFuture<Table<String, String, Double>>  future3 = Futures.transform(future1, function2);
-                    ListenableFuture<List<Multimap<String, Double>>> future4 = Futures.transform(future1, function3);
-                    ListenableFuture<List<Wrapper>>                  future5 = Futures.transform(future4, function4);
-
+            List<Model> items = Lists.newArrayList();
+            dragboard.getFiles().stream().filter(filter::accept).forEach(file -> {
+                Path path = file.toPath();
+                BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
+                Service.INSTANCE.execute(new FileTask(queue, path));
+                ListenableFuture<Multimap<String, String>>       future1 = Service.INSTANCE.submit(new DataTask(queue));
+                ListenableFuture<TableView<List<String>>>        future2 = Futures.transform(future1, function1);
+                ListenableFuture<Table<String, String, Double>>  future3 = Futures.transform(future1, function2);
+                ListenableFuture<List<Multimap<String, Double>>> future4 = Futures.transform(future1, function3);
+                ListenableFuture<List<Wrapper>>                  future5 = Futures.transform(future4, function4);
+                try {
+                    Model.Builder model = new Model.Builder();
+                    model.setDisplayValues(future5.get());
+                    model.setMaxima(future1.get());
+                    model.setView(future2.get());
+                    model.setHeta(future3.get());
+                    model.setFileParameters(file);
+                    items.add(model.build());
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
                 }
-            }
+            });
             if (!items.isEmpty()) {
                 int size = items.size();
-                NewModel model = items.get(size - 1);
+                Model model = items.get(size - 1);
+                table.getItems().addAll(items);
+                table.getSelectionModel().select(model);
             }
         }
         event.setDropCompleted(success);
         event.consume();
     }
 
-    public void callback(Model model) {
-
-    }
-
     public ReadOnlyObjectProperty<Model> selectedItem() {
         return table.getSelectionModel().selectedItemProperty();
-    }
-
-    public ObservableList<Model> getSelectedItems() {
-        return table.getSelectionModel().getSelectedItems();
     }
 
     public ObservableList<Model> getItems() {
@@ -240,17 +207,13 @@ public class TableController implements Initializable {
         } else if (normlToggle.isSelected()) {
             string = "N";
         } else {
-            string = " ";
+            string = "";
         }
         return string;
     }
 
-    public MenuItem getExport() {
-        return export;
-    }
-
     public ObservableList<ToggleButton> getGroup() {
-        return toggleGroup.getButtons();
+        return group3.getButtons();
     }
 
     public BooleanProperty getHToggle() {

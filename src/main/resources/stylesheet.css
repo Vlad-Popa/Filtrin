@@ -100,39 +100,39 @@
 }
 
 #hSliderToggle {
-    -fx-graphic: url("/icon/ic_swap_horiz_black_24dp.png");
+    -fx-graphic: url("/ic_swap_horiz_black_24dp.png");
     -fx-padding: 2;
 }
 #vSliderToggle {
-    -fx-graphic: url("/icon/ic_swap_vert_black_24dp.png");
+    -fx-graphic: url("/ic_swap_vert_black_24dp.png");
     -fx-padding: 2;
 }
 #hydroToggle {
-    -fx-graphic: url("/icon/ic_h_plus_24dp.png");
+    -fx-graphic: url("/ic_h_plus_24dp.png");
     -fx-padding: 2;
 }
 #normlToggle {
-    -fx-graphic: url("icon/ic_filter_1_black_24dp.png");
+    -fx-graphic: url("ic_filter_1_black_24dp.png");
     -fx-padding: 2;
 }
 #statsToggle {
-    -fx-graphic: url("/icon/ic_assessment_black_24dp.png");
+    -fx-graphic: url("/ic_assessment_black_24dp.png");
     -fx-padding: 2;
 }
 #symboToggle {
-    -fx-graphic: url("/icon/ic_center_focus_weak_black_24dp.png");
+    -fx-graphic: url("/ic_center_focus_weak_black_24dp.png");
     -fx-padding: 2;
 }
 #vGridToggle {
-    -fx-graphic: url("/icon/ic_border_vertical_black_24dp.png");
+    -fx-graphic: url("/ic_border_vertical_black_24dp.png");
     -fx-padding: 2;
 }
 #hGridToggle {
-    -fx-graphic: url("/icon/ic_border_horizontal_black_24dp.png");
+    -fx-graphic: url("/ic_border_horizontal_black_24dp.png");
     -fx-padding: 2;
 }
 #panelToggle {
-    -fx-graphic: url("/icon/ic_list_black_24dp.png");
+    -fx-graphic: url("/ic_list_black_24dp.png");
     -fx-padding: 2;
 }
 

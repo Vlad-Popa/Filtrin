@@ -1,149 +1,140 @@
-/*
- * Copyright (C) 2015 Vlad Popa
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
-
 package misc;
 
 import com.google.common.collect.*;
+import com.google.common.io.Files;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.TableView;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
+import org.apache.commons.math3.stat.descriptive.AggregateSummaryStatistics;
+import org.apache.commons.math3.stat.descriptive.StatisticalSummaryValues;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+/**
+ * @author Vlad Popa on 9/1/2015.
+ */
 public class Model {
 
-    private SimpleStringProperty pdb = new SimpleStringProperty();
-    private SimpleDoubleProperty num = new SimpleDoubleProperty();
+    private SimpleStringProperty pdb;
     private SimpleDoubleProperty avg = new SimpleDoubleProperty();
     private SimpleDoubleProperty std = new SimpleDoubleProperty();
     private SimpleDoubleProperty min = new SimpleDoubleProperty();
     private SimpleDoubleProperty max = new SimpleDoubleProperty();
-    private SimpleDoubleProperty med = new SimpleDoubleProperty();
-    private SimpleDoubleProperty skw = new SimpleDoubleProperty();
-    private SimpleDoubleProperty krt = new SimpleDoubleProperty();
 
     private Path path;
     private Set<String> set;
-
-    private Table<String, String, Double> unfiltered;
-    private Table<String, String, Double> values;
     private TableView<List<String>> view;
     private Multimap<String, XYChart.Series<Number, Number>> series;
+    private Table<String, String, SummaryStatistics> table;
 
-    private double lowerBounds;
-    private double upperBounds;
+    private int minima, maxima;
 
-    public Model(Table<String, String, Double> unfiltered, int  min, int max, String name) {
-        this.series = TreeMultimap.create(Ordering.natural(), Ordering.usingToString());
-        this.pdb.set(name);
-        this.set = unfiltered.rowKeySet();
-        this.values = HashBasedTable.create();
-        this.unfiltered = unfiltered;
+    public static class Builder {
 
+        private Multimap<String, XYChart.Series<Number, Number>> multimap;
+        private TableView<List<String>> tableView;
+        private Table<String, String, SummaryStatistics> table;
+        private Table<String, String, Double> heta;
+        private Path path;
+        private String name;
+        private int minima, maxima;
 
-        if (min == 1) {
-            min = 0;
-        } else if (min % 10 != 0) {
-            double value = 10 + (min % 10);
-            min -= value;
+        public Builder() {
+            table = HashBasedTable.create();
+            multimap = TreeMultimap.create(Ordering.natural(), Ordering.usingToString());
         }
-        if (max % 10 != 0) {
-            double value = 10 - (max % 10);
-            max += value;
+
+        public void setDisplayValues(List<Wrapper> list) {
+            for (Wrapper wrapper : list) {
+                multimap.putAll(wrapper.getMultimap());
+                table.putAll(wrapper.getTable());
+            }
         }
-        this.lowerBounds = min;
-        this.upperBounds = max;
+        public void setFileParameters(File file) {
+            path = file.toPath();
+            name = Files.getNameWithoutExtension(file.toString());
+        }
+        public void setMaxima(Multimap<String, String> map) {
+            String minStr = map.get("MIN").iterator().next();
+            String maxStr = map.get("MAX").iterator().next();
+            minima = Integer.parseInt(minStr);
+            maxima = Integer.parseInt(maxStr);
+        }
+        public void setView(TableView<List<String>> tableView) {
+            this.tableView = tableView;
+        }
+
+        public Model build() {
+            return new Model(this);
+        }
+
+        public void setHeta(Table<String, String, Double> heta) {
+            this.heta = heta;
+        }
     }
 
-    public void setCollection(TableView<List<String>> view) {
-        this.view = view;
-    }
+    private Model(Builder builder) {
+        minima = builder.minima;
+        maxima = builder.maxima;
+        if (minima == 1) {
+            minima = 0;
+        } else if (minima % 10 != 0) {
+            double value = 10 + (minima % 10);
+            minima -= value;
+        }
+        if (maxima % 10 != 0) {
+            double value = 10 - (maxima % 10);
+            maxima += value;
+        }
 
-    public boolean containsKey(String key) {
-        return series.containsKey(key);
-    }
-
-    public void setPath(Path path) {
-        this.path = path;
+        path = builder.path;
+        series = builder.multimap;
+        view = builder.tableView;
+        table = builder.table;
+        set = table.columnKeySet();
+        pdb = new SimpleStringProperty(builder.name);
     }
 
     public Path getPath() {
         return path;
     }
-
-    public double[] getBounds(String key) {
-        double min = values.get(key, "min");
-        double max = values.get(key, "max");
-        min -= Math.abs(0.2 * min);
-        max += Math.abs(0.2 * max);
-        return new double[]{lowerBounds, upperBounds, min, max};
+    public Set<String> getSet() {
+        return set;
     }
-
-    public void putAllSeries(Multimap<String, XYChart.Series<Number, Number>> multimap) {
-        series.putAll(multimap);
-    }
-
     public Multimap<String, XYChart.Series<Number, Number>> getSeries() {
         return series;
     }
 
-    public Table<String, String, Double> getTable(boolean value) {
-        return unfiltered;
+    public double[] getBounds() {
+        return new double[]{minima, maxima, min.get(), max.get()};
     }
 
-    public void putValues(String key, StatisticalSummary stats) {
-        int n = (int) stats.getN();
-        if (key.startsWith("Main chain")) n *= 4;
-        if (key.startsWith("Backbone")) n *= 3;
-        if (key.startsWith("All atoms")) {
-            n = unfiltered.size();
+    public void setValues(String key, Set<String> set) {
+        if (table.containsRow(key)) {
+            Map<String, SummaryStatistics> map = Maps.filterKeys(table.row(key), set::contains);
+            Collection<SummaryStatistics> collection = map.values();
+            StatisticalSummaryValues aggregate = AggregateSummaryStatistics.aggregate(collection);
+            min.set(aggregate.getMin());
+            max.set(aggregate.getMax());
+            avg.set(aggregate.getMean());
+            std.set(aggregate.getStandardDeviation());
+        } else {
+            min.set(Double.NaN);
+            max.set(Double.NaN);
+            avg.set(Double.NaN);
+            std.set(Double.NaN);
         }
-        if (key.startsWith("Side chain")) {
-            n = (unfiltered.size()) - (n * 4);
-        }
-        values.put(key, "num", (double) n);
-        values.put(key, "min", stats.getMin());
-        values.put(key, "max", stats.getMax());
-        values.put(key, "avg", stats.getMean());
-        values.put(key, "std", stats.getStandardDeviation());
-    }
-
-    public void setValues(String key) {
-        num.set(values.get(key, "num"));
-        min.set(values.get(key, "min"));
-        max.set(values.get(key, "max"));
-        avg.set(values.get(key, "avg"));
-        std.set(values.get(key, "std"));
-    }
-
-    public Set<String> getSet() {
-        return set;
     }
 
     public SimpleStringProperty pdbProperty() {
         return pdb;
-    }
-    public SimpleDoubleProperty numProperty() {
-        return num;
     }
     public SimpleDoubleProperty avgProperty() {
         return avg;
@@ -156,15 +147,6 @@ public class Model {
     }
     public SimpleDoubleProperty maxProperty() {
         return max;
-    }
-    public SimpleDoubleProperty medProperty() {
-        return med;
-    }
-    public SimpleDoubleProperty skwProperty() {
-        return skw;
-    }
-    public SimpleDoubleProperty krtProperty() {
-        return krt;
     }
     public TableView<List<String>> getView() {
         return view;

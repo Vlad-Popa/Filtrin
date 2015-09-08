@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package task;
 
 import com.google.common.collect.ImmutableMultimap;
@@ -61,9 +60,7 @@ public class DataTask implements Callable<Multimap<String, String>> {
                         multimap.put(key, val);
                     }
                 }
-            } else {
-                break;
-            }
+            } else break;
         }
         multimap.put("MIN", String.valueOf(min));
         multimap.put("MAX", String.valueOf(max));

@@ -25,6 +25,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 
@@ -34,11 +35,14 @@ import java.util.concurrent.BlockingQueue;
 public class RewriteTask implements Runnable {
 
     private final BlockingQueue<String> queue;
-    private final String name;
+    private final File file;
 
-    public RewriteTask(BlockingQueue<String> queue, String name) {
+    public RewriteTask(BlockingQueue<String> queue, Path path) {
+        String toString = path.toString();
+        int lastIndexOf = toString.lastIndexOf(".");
+        String fileName = toString.substring(0, lastIndexOf) + "_normalized.pdb";
+        this.file = new File(fileName);
         this.queue = queue;
-        this.name = name.substring(0, name.lastIndexOf(".")) + "_normalized.pdb";
     }
 
     @Override
@@ -56,14 +60,11 @@ public class RewriteTask implements Runnable {
                         values.put(key, val);
                     }
                     chains.put(key, line);
-                } else {
-                    break;
-                }
+                } else break;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        File file = new File(name);
         try (FileWriter fw = new FileWriter(file); BufferedWriter bw = new BufferedWriter(fw)) {
             for (String key : chains.keySet()) {
                 Collection<Double> collection = values.get(key);

@@ -17,78 +17,72 @@
 package task;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
-import com.google.common.collect.TreeBasedTable;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Multimap;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellReference;
 
-import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.Collection;
 
 /**
  * @author Vlad Popa on 7/1/2015.
  */
-public class WriteTask implements Callable<Table<String, String, CellReference>> {
+public class WriteTask implements Runnable {
 
-    private String value;
     private Sheet sheet;
-    private Table<String, String, Double> table;
+    private Multimap<String, String> multimap;
+    private String value;
 
-    public WriteTask(Table<String, String, Double> table, Sheet sheet, String value) {
-        this.table = table;
+    public WriteTask(Sheet sheet, String value, Multimap<String, String> multimap) {
         this.sheet = sheet;
+        this.multimap = multimap;
         this.value = value;
     }
 
     @Override
-    public Table<String, String, CellReference> call() throws Exception {
+    public void run() {
         sheet.createRow(0);
         int i = 1;
         int column = 0;
-        Predicate<String> main = s -> s.substring(1, 3).matches("N |CA|C |O ");
-        Predicate<String> side = s -> !s.substring(1, 3).matches("N |CA|C |O ");
-        Predicate<String> back = s -> s.substring(1, 3).matches("N |CA|C ");
-        Predicate<String> atom = s -> s.substring(1, 3).equals("CA");
-        Predicate<String> full = s -> true;
-        for (String string : table.rowKeySet()) {
-            DescriptiveStatistics setOneStats = new DescriptiveStatistics();
-            DescriptiveStatistics setTwoStats = new DescriptiveStatistics();
-            Map<String, Double> map = table.row(string);
-            Map<String, Double> filter = null;
-            switch (value) {
-                case "All atoms":   filter = Maps.filterKeys(map, full); break;
-                case "Main chain":  filter = Maps.filterKeys(map, main); break;
-                case "Backbone":    filter = Maps.filterKeys(map, back); break;
-                case "Side chain":  filter = Maps.filterKeys(map, side); break;
-                case "C-Alpha":     filter = Maps.filterKeys(map, atom); break;
-            }
-            assert filter != null;
-            double[] array = Doubles.toArray(filter.values());
-            double[] values = StatUtils.normalize(array);
+        Predicate<String> filters = null;
+        switch (value) {
+            case "All atoms":  filters = s -> true;                                      break;
+            case "Main chain": filters = s ->  s.substring(1, 3).matches("N |CA|C |O "); break;
+            case "Backbone":   filters = s ->  s.substring(1, 3).matches("N |CA|C ");    break;
+            case "Side chain": filters = s -> !s.substring(1, 3).matches("N |CA|C |O "); break;
+            case "C-Alpha":    filters = s ->  s.substring(1, 3).equals("CA");           break;
+        }
+
+        for (String key : multimap.keySet()) {
+            Collection<String> filter = Collections2.filter(multimap.get(key), filters);
+            Collection<Double> values = Collections2.transform(filter, s -> {
+                String string = s.substring(47, 53);
+                return Double.parseDouble(string);
+            });
             int j = 0;
-            for (String key : filter.keySet()) {
-                String name = key.substring(0, 4).trim();
-                String resName = key.substring(5, 8);
-                String resSeq = key.substring(8);
+            double[] doubles = Doubles.toArray(values);
+            double[] normals = StatUtils.normalize(doubles);
+            for (String line : filter) {
+                String name = line.substring(0, 4).trim();
+                String resName = line.substring(5, 8);
+                String resSeq = line.substring(11, 14).trim();
                 int index = Integer.parseInt(resSeq);
                 Row row = sheet.getRow(i);
                 if (row == null) row = sheet.createRow(i);
-                row.createCell(column + 0).setCellValue(string);
+                row.createCell(column + 0).setCellValue(key);
                 row.createCell(column + 1).setCellValue(index);
                 row.createCell(column + 2).setCellValue(resName);
                 row.createCell(column + 3).setCellValue(name);
-                row.createCell(column + 4).setCellValue(array[j]);
-                row.createCell(column + 5).setCellValue(values[j]);
-                setOneStats.addValue(array[j]);
-                setTwoStats.addValue(values[j]);
+                row.createCell(column + 4).setCellValue(doubles[j]);
+                row.createCell(column + 5).setCellValue(normals[j]);
                 i++;
                 j++;
             }
+            DescriptiveStatistics setOneStats = new DescriptiveStatistics(doubles);
+            DescriptiveStatistics setTwoStats = new DescriptiveStatistics(normals);
             sheet.getRow(0).createCell(column + 0).setCellValue("Chain");
             sheet.getRow(0).createCell(column + 1).setCellValue("Sequence Number");
             sheet.getRow(0).createCell(column + 2).setCellValue("Residue");
@@ -104,6 +98,5 @@ public class WriteTask implements Callable<Table<String, String, CellReference>>
             column += 8;
             i = 1;
         }
-        return TreeBasedTable.create();
     }
 }

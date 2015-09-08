@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+package misc;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -28,9 +29,9 @@ public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("root.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/root.fxml"));
         Scene scene = new Scene(root);
-        scene.getStylesheets().add("stylesheet.css");
+        scene.getStylesheets().add("/stylesheet.css");
         primaryStage.setTitle("Filtrin");
         primaryStage.setScene(scene);
         primaryStage.show();

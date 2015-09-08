@@ -20,9 +20,7 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.stage.FileChooser;
 
-import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -34,27 +32,17 @@ public class MenuController implements Initializable {
     @FXML private MenuItem batch;
     @FXML private ToggleGroup group;
 
-    private FileChooser fileChooser;
     private Alert alert;
     private Alert about;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        File initialDirectory = new File(System.getProperty("user.home") + "/Desktop");
-        FileChooser.ExtensionFilter extensionFilter;
-        extensionFilter = new FileChooser.ExtensionFilter("Excel (*.xlsx)", "*.xlsx");
-        fileChooser = new FileChooser();
-        fileChooser.setTitle("Export As...");
-        fileChooser.setInitialDirectory(initialDirectory);
-        fileChooser.setInitialFileName("untitled");
-        fileChooser.getExtensionFilters().addAll(extensionFilter);
-
         alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Licensing");
         alert.setHeaderText("This software uses the following libraries:");
-        alert.setContentText("Google Guava, Copyright (C) 2011 The Guava Authors" + "\n" +
+        alert.setContentText("Google Guava, Copyright (C) 2011 The Guava Authors"             + "\n" +
                 "Apache Commons Math, Copyright (C) 2001-2015 The Apache Software Foundation" + "\n" +
-                "Apache POI, Copyright (C) 2002-2010 The Apache Software Foundation" + "\n" +
+                "Apache POI, Copyright (C) 2002-2010 The Apache Software Foundation"          + "\n" +
                 "ControlsFX, Copyright (C) 2013, 2014, ControlsFX");
         about = new Alert(Alert.AlertType.INFORMATION);
         about.setTitle("About");
@@ -79,9 +67,5 @@ public class MenuController implements Initializable {
     public String getValue() {
         RadioMenuItem item = (RadioMenuItem) group.getSelectedToggle();
         return item.getText();
-    }
-
-    public FileChooser getFileChooser() {
-        return fileChooser;
     }
 }

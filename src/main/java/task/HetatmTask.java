@@ -36,11 +36,11 @@ public class HetatmTask implements Callable<Table<String, String, Double>> {
     }
 
     private void populateTable(double[] values, String key) {
-        DescriptiveStatistics stats1 = new DescriptiveStatistics(values);
-        table.put(key, "n", (double) stats1.getN());
-        table.put(key, "min", stats1.getMin());
-        table.put(key, "max", stats1.getMax());
-        table.put(key, "avg", stats1.getMean());
-        table.put(key, "std", stats1.getStandardDeviation());
+        DescriptiveStatistics statistics = new DescriptiveStatistics(values);
+        table.put(key, "n", (double) statistics.getN());
+        table.put(key, "min", statistics.getMin());
+        table.put(key, "max", statistics.getMax());
+        table.put(key, "avg", statistics.getMean());
+        table.put(key, "std", statistics.getStandardDeviation());
     }
 }

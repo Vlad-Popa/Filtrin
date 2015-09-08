@@ -8,7 +8,7 @@ import com.google.common.primitives.Doubles;
 import javafx.scene.chart.XYChart;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import rewrite.Wrapper;
+import misc.Wrapper;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
@@ -19,7 +19,7 @@ import java.util.concurrent.Callable;
 public class SeriesTask implements Callable<Wrapper> {
 
     private Multimap<String, Double> collection;
-    private Multimap<String, XYChart.Series> multimap;
+    private Multimap<String, XYChart.Series<Number, Number>> multimap;
     private Table<String, String, SummaryStatistics> table;
     private String chainId;
     private int resSeq;
@@ -56,8 +56,10 @@ public class SeriesTask implements Callable<Wrapper> {
         series.setName(chainId);
         int i = resSeq;
         for (Double value : values) {
-            stats.addValue(value);
-            series.getData().add(new XYChart.Data(i, value));
+            if (value != 0) {
+                stats.addValue(value);
+                series.getData().add(new XYChart.Data(i, value));
+            }
             i++;
         }
         multimap.put(key, series);

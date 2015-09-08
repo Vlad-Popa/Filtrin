@@ -111,7 +111,6 @@ public class ChartController implements Initializable {
     public void setModifier(boolean value) {
         modifier = value;
     }
-
     public void showVSlider(boolean value) {
         if (value) {
             chartPane.getChildren().remove(ySlider);
@@ -119,7 +118,6 @@ public class ChartController implements Initializable {
             chartPane.getChildren().add(ySlider);
         }
     }
-
     public void showHSlider(boolean value) {
         if (value) {
             chartBox.getChildren().remove(xSlider);

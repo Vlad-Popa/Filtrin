@@ -19,7 +19,7 @@
             </buttons>
         </SegmentedButton>
         <Pane HBox.hgrow="ALWAYS" />
-        <SegmentedButton fx:id="toggleGroup" />
+        <SegmentedButton fx:id="group3" />
         <SegmentedButton fx:id="group2">
             <buttons>
                 <ToggleButton fx:id="normlToggle" selected="true" />
@@ -42,11 +42,6 @@
             <TableColumn fx:id="pdbColumn" text="File" >
                 <cellValueFactory>
                     <PropertyValueFactory property="pdb" />
-                </cellValueFactory>
-            </TableColumn>
-            <TableColumn fx:id="numColumn" text="Atoms" >
-                <cellValueFactory>
-                    <PropertyValueFactory property="num" />
                 </cellValueFactory>
             </TableColumn>
             <TableColumn fx:id="minColumn" text="Min" >
