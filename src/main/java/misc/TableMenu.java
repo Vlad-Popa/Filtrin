@@ -73,7 +73,6 @@ public class TableMenu extends ContextMenu {
                     MenuController controller = loader.<MenuController>getController();
                     String value = controller.getValue();
 
-                    //Wait for an invoke all
                     for (Model model : tableView.getSelectionModel().getSelectedItems()) {
                         Path path = model.getPath();
                         BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
@@ -81,7 +80,7 @@ public class TableMenu extends ContextMenu {
                         ListenableFuture<Multimap<String, String>> future = Service.INSTANCE.submit(new DataTask(queue));
 
                         Multimap<String, String> multimap = future.get();
-                        Sheet sheet = book.createSheet(model.pdbProperty().get());
+                        Sheet sheet = book.createSheet(model.getName());
                         Service.INSTANCE.submit(new WriteTask(sheet, value, multimap)).get();
                     }
                     book.write(fos);

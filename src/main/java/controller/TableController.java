@@ -28,6 +28,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
@@ -43,6 +44,7 @@ import misc.Service;
 import task.*;
 
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.text.NumberFormat;
@@ -156,8 +158,16 @@ public class TableController implements Initializable {
         Dragboard dragboard = event.getDragboard();
         boolean success = false;
         if (dragboard.hasFiles()) {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/menu.fxml"));
+            try {
+                MenuBar menu = loader.load();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            MenuController controller = loader.<MenuController>getController();
+            String value = controller.getValue() + this.getValue();
             success = true;
-            List<Model> items = Lists.newArrayList();
+
             dragboard.getFiles().stream().filter(filter::accept).forEach(file -> {
                 Path path = file.toPath();
                 BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
@@ -169,22 +179,18 @@ public class TableController implements Initializable {
                 ListenableFuture<List<Wrapper>>                  future5 = Futures.transform(future4, function4);
                 try {
                     Model.Builder model = new Model.Builder();
-                    model.setDisplayValues(future5.get());
+                    model.setDisplayValues(future5.get(), value);
                     model.setMaxima(future1.get());
                     model.setView(future2.get());
                     model.setHeta(future3.get());
                     model.setFileParameters(file);
-                    items.add(model.build());
+                    table.getItems().add(model.build());
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 }
             });
-            if (!items.isEmpty()) {
-                int size = items.size();
-                Model model = items.get(size - 1);
-                table.getItems().addAll(items);
-                table.getSelectionModel().select(model);
-            }
+            int size = table.getItems().size();
+            table.getSelectionModel().select(size - 1);
         }
         event.setDropCompleted(success);
         event.consume();

@@ -16,11 +16,7 @@
 
 package controller;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -63,11 +59,9 @@ public class RootController implements Initializable {
     @FXML private ChartController chartController;
     @FXML private TableController tableController;
 
-    private ObservableList<String> chains;
+
     private ObservableList<ToggleButton> buttons;
     private ObservableList<XYChart.Series<Number, Number>> series;
-    private Predicate<XYChart.Series> predicate = xy -> chains.contains(xy.getName());
-
     private boolean shift;
 
     @Override
@@ -78,7 +72,6 @@ public class RootController implements Initializable {
         });
 
         series = FXCollections.observableArrayList();
-        chains = FXCollections.observableArrayList();
         buttons = FXCollections.observableArrayList();
 
         Bindings.bindContentBidirectional(series, chartController.getChart().getData());
@@ -103,7 +96,7 @@ public class RootController implements Initializable {
         tableController.getItems().addListener((ListChangeListener<Model>) c -> {
             while (c.next()) {
                 for (Model model : c.getAddedSubList()) {
-                    model.setValues(menuController.getValue() + tableController.getValue(), model.getSet());
+                    model.setValues(menuController.getValue() + tableController.getValue());
                 }
             }
         });
@@ -121,31 +114,30 @@ public class RootController implements Initializable {
 
     private ChangeListener<Toggle> categoryListener() {
         return ((observable, oldValue, newValue) -> {
-            if (!tableController.getItems().isEmpty() && newValue != null) {
-                Model model = tableController.selectedItem().get();
+            if (newValue != null) {
                 String value = menuController.getValue();
-
-                Platform.runLater(() -> {
-                    switch (value) {
-                        case "Main chain":
-                        case "Backbone":
-                        case "C-Alpha":
-                            tableController.getHToggle().set(false);
-                            tableController.getActualHToggle().setDisable(true);
-                            break;
-                        default:
-                            tableController.getActualHToggle().setDisable(false);
-                            break;
-                    }
-                    String key = menuController.getValue() + tableController.getValue();
-                    for (Model item : tableController.getItems()) {
-                        item.setValues(key, item.getSet());
-                    }
-                    Multimap<String, XYChart.Series<Number, Number>> filter;
-                    filter = Multimaps.filterValues(model.getSeries(), predicate);
-                    series.setAll(filter.get(key));
-                    chartController.setBounds(model.getBounds());
-                });
+                switch (value) {
+                    case "Main chain":
+                    case "Backbone":
+                    case "C-Alpha":
+                        tableController.getHToggle().set(false);
+                        tableController.getActualHToggle().setDisable(true);
+                        break;
+                    default:
+                        tableController.getActualHToggle().setDisable(false);
+                        break;
+                }
+                if (!tableController.getItems().isEmpty()) {
+                    Platform.runLater(() -> {
+                        Model model = tableController.selectedItem().get();
+                        String key = value + tableController.getValue();
+                        for (Model item : tableController.getItems()) {
+                            item.setValues(key);
+                        }
+                        series.setAll(model.getSeries(key));
+                        chartController.setBounds(model.getBounds());
+                    });
+                }
             }
         });
     }
@@ -154,11 +146,11 @@ public class RootController implements Initializable {
         return ((observable, oldValue, newValue) -> {
             String value = menuController.getValue();
             if (!shift && !tableController.getItems().isEmpty()) {
-                chains.setAll(newValue.getSet());
+                newValue.refreshSet();
                 String key = value + tableController.getValue();
                 List<ToggleButton> toggleList = getButtons(newValue);
                 Platform.runLater(() -> {
-                    series.setAll(newValue.getSeries().get(key));
+                    series.setAll(newValue.getSeries(key));
                     chartController.setBounds(newValue.getBounds());
                     if (tableController.getPToggle().get()) {
                         vBox.getChildren().setAll(newValue.getView());
@@ -178,18 +170,15 @@ public class RootController implements Initializable {
             chartController.setPadding(newValue, tableController.getNToggle().get());
         });
     }
-
     private ChangeListener<Boolean> hSlideListener() {
         return ((observable, oldValue, newValue) -> chartController.showHSlider(oldValue));
     }
-
     private ChangeListener<Boolean> vGridListener() {
         return ((observable, oldValue, newValue) -> {
             chartController.getChart().setVerticalGridLinesVisible(newValue);
             chartController.getChart().setVerticalZeroLineVisible(newValue);
         });
     }
-
     private ChangeListener<Boolean> hGridListener() {
         return ((observable, oldValue, newValue) -> {
             chartController.getChart().setHorizontalGridLinesVisible(newValue);
@@ -200,21 +189,12 @@ public class RootController implements Initializable {
     private ChangeListener<Boolean> statisticsListener() {
         return (observable, oldValue, newValue) -> {
             if (!tableController.getItems().isEmpty()) {
-                String value = menuController.getValue();
-                String key = value + tableController.getValue();
+                String key = menuController.getValue() + tableController.getValue();
                 for (Model item : tableController.getItems()) {
-                    item.setValues(key, item.getSet());
+                    item.setValues(key);
                 }
                 Model model = tableController.selectedItem().get();
-                Multimap<String, XYChart.Series<Number, Number>> filter;
-                filter = Multimaps.filterValues(model.getSeries(), predicate);
-                boolean bool = tableController.getNToggle().get();
-                switch (menuController.getValue()) {
-                    case "Main chain":
-                    case "Backbone":
-                    case "C-Alpha": key = bool ? value + "N" : value; break;
-                }
-                series.setAll(filter.get(key));
+                series.setAll(model.getSeries(key));
                 chartController.setBounds(model.getBounds());
                 boolean toggle = tableController.getNToggle().get();
                 chartController.setPadding(tableController.getVSlider().get(), toggle);
@@ -253,16 +233,10 @@ public class RootController implements Initializable {
             button.setPrefSize(30, 30);
             button.setSelected(true);
             button.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue && !chains.contains(string)) {
-                    chains.add(string);
-                } else {
-                    chains.remove(string);
-                }
+                model.updateSet(newValue, string);
                 String key = menuController.getValue() + tableController.getValue();
-                Multimap<String, XYChart.Series<Number, Number>> filter;
-                filter = Multimaps.filterValues(model.getSeries(), predicate);
-                series.setAll(filter.get(key));
-                model.setValues(key, Sets.newHashSet(chains));
+                series.setAll(model.getSeries(key));
+                model.setValues(key);
             });
             list.add(button);
         }

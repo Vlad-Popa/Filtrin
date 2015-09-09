@@ -23,10 +23,7 @@ import java.util.Set;
 public class Model {
 
     private SimpleStringProperty pdb;
-    private SimpleDoubleProperty avg = new SimpleDoubleProperty();
-    private SimpleDoubleProperty std = new SimpleDoubleProperty();
-    private SimpleDoubleProperty min = new SimpleDoubleProperty();
-    private SimpleDoubleProperty max = new SimpleDoubleProperty();
+    private SimpleDoubleProperty avg,std, min, max;
 
     private Path path;
     private Set<String> set;
@@ -34,14 +31,16 @@ public class Model {
     private Multimap<String, XYChart.Series<Number, Number>> series;
     private Table<String, String, SummaryStatistics> table;
 
-    private int minima, maxima;
+    private int lowerBound, upperBound;
 
     public static class Builder {
 
         private Multimap<String, XYChart.Series<Number, Number>> multimap;
-        private TableView<List<String>> tableView;
+
         private Table<String, String, SummaryStatistics> table;
         private Table<String, String, Double> heta;
+        private StatisticalSummaryValues aggregate;
+        private TableView<List<String>> tableView;
         private Path path;
         private String name;
         private int minima, maxima;
@@ -51,12 +50,16 @@ public class Model {
             multimap = TreeMultimap.create(Ordering.natural(), Ordering.usingToString());
         }
 
-        public void setDisplayValues(List<Wrapper> list) {
+        public void setDisplayValues(List<Wrapper> list, String key) {
             for (Wrapper wrapper : list) {
                 multimap.putAll(wrapper.getMultimap());
                 table.putAll(wrapper.getTable());
             }
+            Map<String, SummaryStatistics> map = table.row(key);
+            Collection<SummaryStatistics> collection = map.values();
+            aggregate = AggregateSummaryStatistics.aggregate(collection);
         }
+
         public void setFileParameters(File file) {
             path = file.toPath();
             name = Files.getNameWithoutExtension(file.toString());
@@ -66,58 +69,81 @@ public class Model {
             String maxStr = map.get("MAX").iterator().next();
             minima = Integer.parseInt(minStr);
             maxima = Integer.parseInt(maxStr);
+            if (minima == 1) {
+                minima = 0;
+            } else if (minima % 10 != 0) {
+                double value = 10 + (minima % 10);
+                minima -= value;
+            }
+            if (maxima % 10 != 0) {
+                double value = 10 - (maxima % 10);
+                maxima += value;
+            }
         }
         public void setView(TableView<List<String>> tableView) {
             this.tableView = tableView;
+        }
+        public void setHeta(Table<String, String, Double> heta) {
+            this.heta = heta;
         }
 
         public Model build() {
             return new Model(this);
         }
-
-        public void setHeta(Table<String, String, Double> heta) {
-            this.heta = heta;
-        }
     }
 
     private Model(Builder builder) {
-        minima = builder.minima;
-        maxima = builder.maxima;
-        if (minima == 1) {
-            minima = 0;
-        } else if (minima % 10 != 0) {
-            double value = 10 + (minima % 10);
-            minima -= value;
-        }
-        if (maxima % 10 != 0) {
-            double value = 10 - (maxima % 10);
-            maxima += value;
-        }
-
-        path = builder.path;
-        series = builder.multimap;
-        view = builder.tableView;
-        table = builder.table;
-        set = table.columnKeySet();
-        pdb = new SimpleStringProperty(builder.name);
+        StatisticalSummaryValues aggregate = builder.aggregate;
+        lowerBound = builder.minima;
+        upperBound = builder.maxima;
+        path    = builder.path;
+        series  = builder.multimap;
+        view    = builder.tableView;
+        table   = builder.table;
+        pdb     = new SimpleStringProperty(builder.name);
+        min     = new SimpleDoubleProperty(aggregate.getMin());
+        max     = new SimpleDoubleProperty(aggregate.getMax());
+        avg     = new SimpleDoubleProperty(aggregate.getMean());
+        std     = new SimpleDoubleProperty(aggregate.getStandardDeviation());
+        set     = Sets.newHashSet(table.columnKeySet());
     }
 
     public Path getPath() {
         return path;
     }
-    public Set<String> getSet() {
-        return set;
+    public String getName() {
+        return pdb.get();
     }
-    public Multimap<String, XYChart.Series<Number, Number>> getSeries() {
-        return series;
+
+
+    public Collection<XYChart.Series<Number, Number>> getSeries(String key) {
+        Collection<XYChart.Series<Number, Number>> collection = series.get(key);
+        return Collections2.filter(collection, xy -> set.contains(xy.getName()));
     }
 
     public double[] getBounds() {
-        return new double[]{minima, maxima, min.get(), max.get()};
+        return new double[]{lowerBound, upperBound, min.get(), max.get()};
     }
 
-    public void setValues(String key, Set<String> set) {
-        if (table.containsRow(key)) {
+    public Set<String> getSet() {
+        return Sets.newHashSet(table.columnKeySet());
+    }
+    public void refreshSet() {
+        set = Sets.newHashSet(table.columnKeySet());
+    }
+    public void updateSet(Boolean newValue, String value) {
+        if (newValue) {
+            set.add(value);
+        } else {
+            set.remove(value);
+        }
+    }
+
+    public TableView<List<String>> getView() {
+        return view;
+    }
+
+    public void setValues(String key) {
             Map<String, SummaryStatistics> map = Maps.filterKeys(table.row(key), set::contains);
             Collection<SummaryStatistics> collection = map.values();
             StatisticalSummaryValues aggregate = AggregateSummaryStatistics.aggregate(collection);
@@ -125,12 +151,6 @@ public class Model {
             max.set(aggregate.getMax());
             avg.set(aggregate.getMean());
             std.set(aggregate.getStandardDeviation());
-        } else {
-            min.set(Double.NaN);
-            max.set(Double.NaN);
-            avg.set(Double.NaN);
-            std.set(Double.NaN);
-        }
     }
 
     public SimpleStringProperty pdbProperty() {
@@ -147,8 +167,5 @@ public class Model {
     }
     public SimpleDoubleProperty maxProperty() {
         return max;
-    }
-    public TableView<List<String>> getView() {
-        return view;
     }
 }
