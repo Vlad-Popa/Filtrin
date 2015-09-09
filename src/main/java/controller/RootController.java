@@ -123,8 +123,21 @@ public class RootController implements Initializable {
         return ((observable, oldValue, newValue) -> {
             if (!tableController.getItems().isEmpty() && newValue != null) {
                 Model model = tableController.selectedItem().get();
-                String key = menuController.getValue() + tableController.getValue();
+                String value = menuController.getValue();
+
                 Platform.runLater(() -> {
+                    switch (value) {
+                        case "Main chain":
+                        case "Backbone":
+                        case "C-Alpha":
+                            tableController.getHToggle().set(false);
+                            tableController.getActualHToggle().setDisable(true);
+                            break;
+                        default:
+                            tableController.getActualHToggle().setDisable(false);
+                            break;
+                    }
+                    String key = menuController.getValue() + tableController.getValue();
                     for (Model item : tableController.getItems()) {
                         item.setValues(key, item.getSet());
                     }
@@ -132,7 +145,6 @@ public class RootController implements Initializable {
                     filter = Multimaps.filterValues(model.getSeries(), predicate);
                     series.setAll(filter.get(key));
                     chartController.setBounds(model.getBounds());
-
                 });
             }
         });

@@ -215,6 +215,9 @@ public class TableController implements Initializable {
     public ObservableList<ToggleButton> getGroup() {
         return group3.getButtons();
     }
+    public ToggleButton getActualHToggle() {
+        return hydroToggle;
+    }
 
     public BooleanProperty getHToggle() {
         return hydroToggle.selectedProperty();

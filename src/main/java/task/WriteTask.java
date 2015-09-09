@@ -19,6 +19,7 @@ package task;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -38,7 +39,7 @@ public class WriteTask implements Runnable {
 
     public WriteTask(Sheet sheet, String value, Multimap<String, String> multimap) {
         this.sheet = sheet;
-        this.multimap = multimap;
+        this.multimap = Multimaps.filterKeys(multimap, s -> s.length() == 1);
         this.value = value;
     }
 
@@ -59,7 +60,7 @@ public class WriteTask implements Runnable {
         for (String key : multimap.keySet()) {
             Collection<String> filter = Collections2.filter(multimap.get(key), filters);
             Collection<Double> values = Collections2.transform(filter, s -> {
-                String string = s.substring(47, 53);
+                String string = s.substring(48, 54);
                 return Double.parseDouble(string);
             });
             int j = 0;
@@ -67,7 +68,7 @@ public class WriteTask implements Runnable {
             double[] normals = StatUtils.normalize(doubles);
             for (String line : filter) {
                 String name = line.substring(0, 4).trim();
-                String resName = line.substring(5, 8);
+                String resName = line.substring(4, 8).trim();
                 String resSeq = line.substring(11, 14).trim();
                 int index = Integer.parseInt(resSeq);
                 Row row = sheet.getRow(i);

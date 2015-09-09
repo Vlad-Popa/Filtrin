@@ -28,32 +28,37 @@ import java.util.concurrent.Callable;
 public class DataTask implements Callable<Multimap<String, String>> {
 
     private final BlockingQueue<String> queue;
-    private int min;
-    private int max;
-    private boolean nID;
 
     public DataTask(BlockingQueue<String> queue) {
         this.queue = queue;
-        this.min = Integer.MAX_VALUE;
-        this.max = Integer.MIN_VALUE;
-        this.nID = true;
     }
 
     @Override
     public Multimap<String, String> call() throws Exception {
         ImmutableMultimap.Builder<String, String> multimap = ImmutableMultimap.builder();
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        boolean nID = true;
         while (true) {
             String line = queue.take();
             if (!line.equals("POISON")) {
                 char alt = line.charAt(16);
                 if (line.startsWith("TER")) {
-                    this.updateResSeq(line);
+                    String str = line.substring(23, 26).trim();
+                    int resSeq = Integer.parseInt(str);
+                    max = Math.max(max, resSeq);
+                    nID = true;
                 } else if (alt == (' ') || alt == 'A') {
                     if (line.startsWith("ATOM")) {
                         String key = line.substring(21, 22);
                         String val = line.substring(12, 66);
                         multimap.put(key, val);
-                        if (nID) this.updateResSeq(line);
+                        if (nID) {
+                            String str = line.substring(23, 26).trim();
+                            int resSeq = Integer.parseInt(str);
+                            min = Math.min(min, resSeq);
+                            nID = false;
+                        }
                     } else if (line.startsWith("HETATM")) {
                         String key = line.substring(18, 20);
                         String val = line.substring(60, 66);
@@ -65,13 +70,5 @@ public class DataTask implements Callable<Multimap<String, String>> {
         multimap.put("MIN", String.valueOf(min));
         multimap.put("MAX", String.valueOf(max));
         return multimap.build();
-    }
-
-    private void updateResSeq(String line) {
-        String str = line.substring(23, 26).trim();
-        int resSeq = Integer.parseInt(str);
-        min = Math.min(min, resSeq);
-        max = Math.max(max, resSeq);
-        nID = !nID;
     }
 }
