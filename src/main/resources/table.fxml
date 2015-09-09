@@ -14,6 +14,7 @@
                 <ToggleButton fx:id="statsToggle" selected="true" />
                 <ToggleButton fx:id="hGridToggle" selected="true" />
                 <ToggleButton fx:id="vGridToggle" selected="true" />
+                <ToggleButton fx:id="pointToggle" selected="false" />
                 <ToggleButton fx:id="vSliderToggle" selected="false" />
                 <ToggleButton fx:id="hSliderToggle" selected="false" />
             </buttons>

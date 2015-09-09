@@ -60,11 +60,11 @@ public class Model {
             aggregate = AggregateSummaryStatistics.aggregate(collection);
         }
 
-        public void setFileParameters(File file) {
+        public void setFileParams(File file) {
             path = file.toPath();
             name = Files.getNameWithoutExtension(file.toString());
         }
-        public void setMaxima(Multimap<String, String> map) {
+        public void setExtrema(Multimap<String, String> map) {
             String minStr = map.get("MIN").iterator().next();
             String maxStr = map.get("MAX").iterator().next();
             minima = Integer.parseInt(minStr);
@@ -80,10 +80,10 @@ public class Model {
                 maxima += value;
             }
         }
-        public void setView(TableView<List<String>> tableView) {
+        public void setTableView(TableView<List<String>> tableView) {
             this.tableView = tableView;
         }
-        public void setHeta(Table<String, String, Double> heta) {
+        public void setHetatmStats(Table<String, String, Double> heta) {
             this.heta = heta;
         }
 
@@ -100,12 +100,13 @@ public class Model {
         series  = builder.multimap;
         view    = builder.tableView;
         table   = builder.table;
+        set     = Sets.newHashSet(table.columnKeySet());
         pdb     = new SimpleStringProperty(builder.name);
         min     = new SimpleDoubleProperty(aggregate.getMin());
         max     = new SimpleDoubleProperty(aggregate.getMax());
         avg     = new SimpleDoubleProperty(aggregate.getMean());
         std     = new SimpleDoubleProperty(aggregate.getStandardDeviation());
-        set     = Sets.newHashSet(table.columnKeySet());
+
     }
 
     public Path getPath() {

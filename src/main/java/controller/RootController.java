@@ -59,7 +59,6 @@ public class RootController implements Initializable {
     @FXML private ChartController chartController;
     @FXML private TableController tableController;
 
-
     private ObservableList<ToggleButton> buttons;
     private ObservableList<XYChart.Series<Number, Number>> series;
     private boolean shift;
@@ -110,6 +109,7 @@ public class RootController implements Initializable {
         tableController.getSToggle().addListener(dividerListener2(divider2, 0.5, 1.0));
         tableController.getHSlider().addListener(hSlideListener());
         tableController.getVSlider().addListener(vSlideListener());
+        tableController.getPointTg().addListener(pointListener());
     }
 
     private ChangeListener<Toggle> categoryListener() {
@@ -184,6 +184,9 @@ public class RootController implements Initializable {
             chartController.getChart().setHorizontalGridLinesVisible(newValue);
             chartController.getChart().setHorizontalZeroLineVisible(newValue);
         });
+    }
+    private ChangeListener<Boolean> pointListener() {
+        return ((observable, oldValue, newValue) -> chartController.getChart().setCreateSymbols(newValue));
     }
 
     private ChangeListener<Boolean> statisticsListener() {

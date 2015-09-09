@@ -107,6 +107,12 @@
     -fx-graphic: url("/ic_swap_vert_black_24dp.png");
     -fx-padding: 2;
 }
+
+#pointToggle {
+    -fx-graphic: url("/ic_center_focus_weak_black_24dp.png");
+    -fx-padding: 2;
+}
+
 #hydroToggle {
     -fx-graphic: url("/ic_h_plus_24dp.png");
     -fx-padding: 2;

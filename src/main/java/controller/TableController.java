@@ -72,6 +72,7 @@ public class TableController implements Initializable {
     @FXML private SegmentedButton group3;
     @FXML private ToggleButton hSliderToggle;
     @FXML private ToggleButton vSliderToggle;
+    @FXML private ToggleButton pointToggle;
     @FXML private ToggleButton panelToggle;
     @FXML private ToggleButton hydroToggle;
     @FXML private ToggleButton normlToggle;
@@ -172,18 +173,18 @@ public class TableController implements Initializable {
                 Path path = file.toPath();
                 BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
                 Service.INSTANCE.execute(new FileTask(queue, path));
-                ListenableFuture<Multimap<String, String>>       future1 = Service.INSTANCE.submit(new DataTask(queue));
-                ListenableFuture<TableView<List<String>>>        future2 = Futures.transform(future1, function1);
-                ListenableFuture<Table<String, String, Double>>  future3 = Futures.transform(future1, function2);
+                ListenableFuture<Multimap<String, String>> future1 = Service.INSTANCE.submit(new DataTask(queue));
+                ListenableFuture<TableView<List<String>>> future2 = Futures.transform(future1, function1);
+                ListenableFuture<Table<String, String, Double>> future3 = Futures.transform(future1, function2);
                 ListenableFuture<List<Multimap<String, Double>>> future4 = Futures.transform(future1, function3);
-                ListenableFuture<List<Wrapper>>                  future5 = Futures.transform(future4, function4);
+                ListenableFuture<List<Wrapper>> future5 = Futures.transform(future4, function4);
                 try {
                     Model.Builder model = new Model.Builder();
                     model.setDisplayValues(future5.get(), value);
-                    model.setMaxima(future1.get());
-                    model.setView(future2.get());
-                    model.setHeta(future3.get());
-                    model.setFileParameters(file);
+                    model.setExtrema(future1.get());
+                    model.setTableView(future2.get());
+                    model.setHetatmStats(future3.get());
+                    model.setFileParams(file);
                     table.getItems().add(model.build());
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
@@ -248,5 +249,8 @@ public class TableController implements Initializable {
     }
     public BooleanProperty getVSlider() {
         return vSliderToggle.selectedProperty();
+    }
+    public BooleanProperty getPointTg() {
+        return pointToggle.selectedProperty();
     }
 }
