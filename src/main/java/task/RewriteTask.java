@@ -16,8 +16,7 @@
 
 package task;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.math3.stat.StatUtils;
 
@@ -27,6 +26,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -47,41 +48,54 @@ public class RewriteTask implements Runnable {
 
     @Override
     public void run() {
-        Multimap<String, String> chains = LinkedListMultimap.create();
-        Multimap<String, Double> values = LinkedListMultimap.create();
+        List<String> list = Lists.newLinkedList();
+        ImmutableTable.Builder<String, String, Double> builder = ImmutableTable.builder();
         while (true) {
             try {
                 String line = queue.take();
                 if (!line.equals("POISON")) {
-                    String key = line.substring(21, 22);
                     if (line.startsWith("ATOM")) {
+                        String key = line.substring(21, 22);
                         String tmp = line.substring(60, 66);
                         double val = Double.parseDouble(tmp);
-                        values.put(key, val);
+                        builder.put(key, line, val);
                     }
-                    chains.put(key, line);
+                    list.add(line);
                 } else break;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        Table<String, String, Double> table = builder.build();
         try (FileWriter fw = new FileWriter(file); BufferedWriter bw = new BufferedWriter(fw)) {
-            for (String key : chains.keySet()) {
-                Collection<Double> collection = values.get(key);
-                double[] doubles = Doubles.toArray(collection);
-                double[] normals = StatUtils.normalize(doubles);
-                int i = 0;
-                for (String line : chains.get(key)) {
-                    if (line.startsWith("ATOM")) {
-                        String factor = String.valueOf(normals[i]).substring(0, 5);
-                        String string = line.substring(0, 60) + ' ' + factor + line.substring(66);
-                        bw.write(string);
-                        bw.newLine();
-                        i++;
-                    } else {
-                        bw.write(line);
-                        bw.newLine();
+            Iterator<String> iterator = table.columnKeySet().iterator();
+            String current = iterator.next();
+            String chainId = current.substring(21, 22);
+            Collection<Double> collection = table.row(chainId).values();
+            double[] doubles = Doubles.toArray(collection);
+            double[] normals = StatUtils.normalize(doubles);
+            int i = 0;
+            for (String line : list) {
+                if (line.equals(current)) {
+                    String key = current.substring(21, 22);
+                    if (!key.equals(chainId)) {
+                        collection = table.row(key).values();
+                        doubles = Doubles.toArray(collection);
+                        normals = StatUtils.normalize(doubles);
+                        chainId = key;
+                        i = 0;
                     }
+                    String factor = String.valueOf(normals[i]).substring(0, 5);
+                    String str = line.substring(0, 60) + ' ' + factor + line.substring(66);
+                    bw.write(str);
+                    bw.newLine();
+                    i++;
+                    if (iterator.hasNext()) {
+                        current = iterator.next();
+                    }
+                } else {
+                    bw.write(line);
+                    bw.newLine();
                 }
             }
         } catch (IOException e) {

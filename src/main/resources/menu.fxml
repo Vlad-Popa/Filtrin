@@ -12,11 +12,12 @@
         <RadioMenuItem text="Side chain" toggleGroup="$group"/>
         <RadioMenuItem text="Backbone"   toggleGroup="$group"/>
         <RadioMenuItem text="C-Alpha"    toggleGroup="$group"/>
-        <SeparatorMenuItem/>
-        <RadioMenuItem text="Hetero atoms" toggleGroup="$group"/>
     </Menu>
-    <Menu mnemonicParsing="false" text="Info">
-        <MenuItem mnemonicParsing="false" text="Licensing" onAction="#handleLicenceDialogue"/>
-        <MenuItem mnemonicParsing="false" text="About" onAction="#handleAboutDialogue" />
+    <Menu text="Hetatm">
+        <MenuItem text="Show statistics" />
+    </Menu>
+    <Menu text="Info">
+        <MenuItem text="Licensing" onAction="#handleLicenceDialogue"/>
+        <MenuItem text="About" onAction="#handleAboutDialogue" />
     </Menu>
 </MenuBar>

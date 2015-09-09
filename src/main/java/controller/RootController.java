@@ -125,17 +125,14 @@ public class RootController implements Initializable {
                 Model model = tableController.selectedItem().get();
                 String key = menuController.getValue() + tableController.getValue();
                 Platform.runLater(() -> {
-                    if (menuController.getValue().equals("Hetero atoms")) {
-
-                    } else {
-                        for (Model item : tableController.getItems()) {
-                            item.setValues(key, item.getSet());
-                        }
-                        Multimap<String, XYChart.Series<Number, Number>> filter;
-                        filter = Multimaps.filterValues(model.getSeries(), predicate);
-                        series.setAll(filter.get(key));
-                        chartController.setBounds(model.getBounds());
+                    for (Model item : tableController.getItems()) {
+                        item.setValues(key, item.getSet());
                     }
+                    Multimap<String, XYChart.Series<Number, Number>> filter;
+                    filter = Multimaps.filterValues(model.getSeries(), predicate);
+                    series.setAll(filter.get(key));
+                    chartController.setBounds(model.getBounds());
+
                 });
             }
         });
@@ -144,7 +141,7 @@ public class RootController implements Initializable {
     private ChangeListener<Model> modelListener() {
         return ((observable, oldValue, newValue) -> {
             String value = menuController.getValue();
-            if (!value.equals("Hetero atoms") && !shift && !tableController.getItems().isEmpty()) {
+            if (!shift && !tableController.getItems().isEmpty()) {
                 chains.setAll(newValue.getSet());
                 String key = value + tableController.getValue();
                 List<ToggleButton> toggleList = getButtons(newValue);
