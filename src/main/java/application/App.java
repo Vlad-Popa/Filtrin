@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package misc;
+package application;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

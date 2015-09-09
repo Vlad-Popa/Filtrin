@@ -55,7 +55,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>misc.App</mainClass>
+                            <mainClass>application.App</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

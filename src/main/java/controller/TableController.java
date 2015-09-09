@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-
-
 package controller;
 
 import com.google.common.collect.Lists;
@@ -37,10 +35,10 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.util.StringConverter;
 import org.controlsfx.control.SegmentedButton;
-import misc.Model;
-import misc.TableMenu;
-import misc.Wrapper;
-import misc.Service;
+import application.Model;
+import application.TableMenu;
+import application.Wrapper;
+import application.Service;
 import task.*;
 
 import javax.swing.filechooser.FileNameExtensionFilter;

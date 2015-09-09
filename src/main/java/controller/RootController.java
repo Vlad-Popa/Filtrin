@@ -37,7 +37,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
-import misc.Model;
+import application.Model;
 
 import java.net.URL;
 import java.util.List;
