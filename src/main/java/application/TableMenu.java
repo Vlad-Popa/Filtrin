@@ -17,12 +17,8 @@
 package application;
 
 import com.google.common.collect.Multimap;
-import com.google.common.util.concurrent.ListenableFuture;
-import controller.MenuController;
 import javafx.collections.ObservableList;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableView;
 import javafx.stage.FileChooser;
@@ -84,20 +80,14 @@ public class TableMenu extends ContextMenu {
             if (file != null) {
                 try (FileOutputStream fos = new FileOutputStream(file)) {
                     Workbook book = new XSSFWorkbook();
-                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/menu.fxml"));
-                    MenuBar menu = loader.load();
-                    MenuController controller = loader.<MenuController>getController();
-                    String value = controller.getValue();
-
                     for (Model model : tableView.getSelectionModel().getSelectedItems()) {
                         Path path = model.getPath();
                         BlockingQueue<String> queue = new ArrayBlockingQueue<>(200);
                         Service.INSTANCE.execute(new FileTask(queue, path));
-                        ListenableFuture<Multimap<String, String>> future = Service.INSTANCE.submit(new DataTask(queue));
-
-                        Multimap<String, String> multimap = future.get();
+                        Multimap<String, String> multimap = Service.INSTANCE.submit(new DataTask(queue)).get();
                         Sheet sheet = book.createSheet(model.getName());
-                        Service.INSTANCE.submit(new WriteTask(sheet, value, multimap)).get();
+                        String key = model.getKey();
+                        Service.INSTANCE.submit(new WriteTask(sheet, key, multimap)).get();
                     }
                     book.write(fos);
                     Notifications.create().title("Export Complete").text("The file was successfully written").showConfirm();

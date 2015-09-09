@@ -29,7 +29,6 @@ import java.util.ResourceBundle;
  */
 public class MenuController implements Initializable {
 
-    @FXML private MenuItem batch;
     @FXML private ToggleGroup group;
 
     private Alert alert;

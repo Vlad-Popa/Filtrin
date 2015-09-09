@@ -49,12 +49,12 @@ public class WriteTask implements Runnable {
         int i = 1;
         int column = 0;
         Predicate<String> filters = null;
-        switch (value) {
-            case "All atoms":  filters = s -> true;                                      break;
-            case "Main chain": filters = s ->  s.substring(1, 3).matches("N |CA|C |O "); break;
-            case "Backbone":   filters = s ->  s.substring(1, 3).matches("N |CA|C ");    break;
-            case "Side chain": filters = s -> !s.substring(1, 3).matches("N |CA|C |O "); break;
-            case "C-Alpha":    filters = s ->  s.substring(1, 3).equals("CA");           break;
+        switch (value.substring(0, 4)) {
+            case "All ": filters = s -> true;                                      break;
+            case "Main": filters = s ->  s.substring(1, 3).matches("N |CA|C |O "); break;
+            case "Back": filters = s ->  s.substring(1, 3).matches("N |CA|C ");    break;
+            case "Side": filters = s -> !s.substring(1, 3).matches("N |CA|C |O "); break;
+            case "C-Al": filters = s ->  s.substring(1, 3).equals("CA");           break;
         }
 
         for (String key : multimap.keySet()) {

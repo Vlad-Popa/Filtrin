@@ -43,11 +43,16 @@ public class Model {
 
     private Path path;
     private Set<String> set;
+    private String key;
     private TableView<List<String>> view;
     private Multimap<String, XYChart.Series<Number, Number>> series;
     private Table<String, String, SummaryStatistics> table;
 
     private int lowerBound, upperBound;
+
+    public String getKey() {
+        return key;
+    }
 
     public static class Builder {
 
@@ -58,7 +63,7 @@ public class Model {
         private StatisticalSummaryValues aggregate;
         private TableView<List<String>> tableView;
         private Path path;
-        private String name;
+        private String name, key;
         private int minima, maxima;
 
         public Builder() {
@@ -74,6 +79,7 @@ public class Model {
             Map<String, SummaryStatistics> map = table.row(key);
             Collection<SummaryStatistics> collection = map.values();
             aggregate = AggregateSummaryStatistics.aggregate(collection);
+            this.key = key;
         }
 
         public void setFileParams(File file) {
@@ -116,13 +122,13 @@ public class Model {
         series  = builder.multimap;
         view    = builder.tableView;
         table   = builder.table;
+        key     = builder.key;
         set     = Sets.newHashSet(table.columnKeySet());
         pdb     = new SimpleStringProperty(builder.name);
         min     = new SimpleDoubleProperty(aggregate.getMin());
         max     = new SimpleDoubleProperty(aggregate.getMax());
         avg     = new SimpleDoubleProperty(aggregate.getMean());
         std     = new SimpleDoubleProperty(aggregate.getStandardDeviation());
-
     }
 
     public Path getPath() {
@@ -161,13 +167,14 @@ public class Model {
     }
 
     public void setValues(String key) {
-            Map<String, SummaryStatistics> map = Maps.filterKeys(table.row(key), set::contains);
-            Collection<SummaryStatistics> collection = map.values();
-            StatisticalSummaryValues aggregate = AggregateSummaryStatistics.aggregate(collection);
-            min.set(aggregate.getMin());
-            max.set(aggregate.getMax());
-            avg.set(aggregate.getMean());
-            std.set(aggregate.getStandardDeviation());
+        Map<String, SummaryStatistics> map = Maps.filterKeys(table.row(key), set::contains);
+        Collection<SummaryStatistics> collection = map.values();
+        StatisticalSummaryValues aggregate = AggregateSummaryStatistics.aggregate(collection);
+        min.set(aggregate.getMin());
+        max.set(aggregate.getMax());
+        avg.set(aggregate.getMean());
+        std.set(aggregate.getStandardDeviation());
+        this.key = key;
     }
 
     public SimpleStringProperty pdbProperty() {
