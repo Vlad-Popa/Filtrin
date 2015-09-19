@@ -39,10 +39,10 @@ public class MenuController implements Initializable {
         alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Licensing");
         alert.setHeaderText("This software uses the following libraries:");
-        alert.setContentText("Google Guava, Copyright (C) 2011 The Guava Authors"             + "\n" +
-                "Apache Commons Math, Copyright (C) 2001-2015 The Apache Software Foundation" + "\n" +
-                "Apache POI, Copyright (C) 2002-2010 The Apache Software Foundation"          + "\n" +
-                "ControlsFX, Copyright (C) 2013, 2014, ControlsFX");
+        alert.setContentText("Google Guava, Copyright (C) 2011, The Guava Authors"             + "\n" +
+                             "Apache Commons Math and Apache POI," + "\n" +
+                             "Copyright (C) 2001-2015, The Apache Software Foundation" + "\n" +
+                             "ControlsFX, Copyright (C) 2013-2015, The ControlsFX Authors");
         about = new Alert(Alert.AlertType.INFORMATION);
         about.setTitle("About");
         about.setHeaderText("Copyright (C) 2015 Vlad Popa");
