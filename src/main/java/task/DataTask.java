@@ -60,7 +60,7 @@ public class DataTask implements Callable<Multimap<String, String>> {
                             nID = false;
                         }
                     } else if (line.startsWith("HETATM")) {
-                        String key = line.substring(18, 20);
+                        String key = line.substring(17, 20);
                         String val = line.substring(60, 66);
                         multimap.put(key, val);
                     }

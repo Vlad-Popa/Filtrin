@@ -16,7 +16,6 @@
 
 package application;
 
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 /**
@@ -25,29 +24,29 @@ import javafx.beans.property.SimpleStringProperty;
 public class HetModel {
 
     private SimpleStringProperty pdb;
-    private SimpleDoubleProperty avg, std, min, max;
+    private SimpleStringProperty avg, std, min, max;
 
-    public HetModel(String pdb, double avg, double std, double min, double max) {
+    public HetModel(String pdb, String avg, String std, String min, String max) {
         this.pdb = new SimpleStringProperty(pdb);
-        this.avg = new SimpleDoubleProperty(avg);
-        this.std = new SimpleDoubleProperty(std);
-        this.min = new SimpleDoubleProperty(min);
-        this.max = new SimpleDoubleProperty(max);
+        this.avg = new SimpleStringProperty(avg);
+        this.std = new SimpleStringProperty(std);
+        this.min = new SimpleStringProperty(min);
+        this.max = new SimpleStringProperty(max);
     }
 
     public SimpleStringProperty pdbProperty() {
         return pdb;
     }
-    public SimpleDoubleProperty avgProperty() {
+    public SimpleStringProperty avgProperty() {
         return avg;
     }
-    public SimpleDoubleProperty stdProperty() {
+    public SimpleStringProperty stdProperty() {
         return std;
     }
-    public SimpleDoubleProperty minProperty() {
+    public SimpleStringProperty minProperty() {
         return min;
     }
-    public SimpleDoubleProperty maxProperty() {
+    public SimpleStringProperty maxProperty() {
         return max;
     }
 }

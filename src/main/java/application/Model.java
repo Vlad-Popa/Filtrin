@@ -49,9 +49,14 @@ public class Model {
     private Table<String, String, SummaryStatistics> table;
 
     private int lowerBound, upperBound;
+    private Map<String, double[]> hetaMap;
 
     public String getKey() {
         return key;
+    }
+
+    public Map<String, double[]> getHetaMap() {
+        return hetaMap;
     }
 
     public static class Builder {
@@ -59,7 +64,7 @@ public class Model {
         private Multimap<String, XYChart.Series<Number, Number>> multimap;
 
         private Table<String, String, SummaryStatistics> table;
-        private Table<String, String, Double> heta;
+        private Map<String, double[]> hetatmMap;
         private StatisticalSummaryValues aggregate;
         private TableView<List<String>> tableView;
         private Path path;
@@ -105,8 +110,8 @@ public class Model {
         public void setTableView(TableView<List<String>> tableView) {
             this.tableView = tableView;
         }
-        public void setHetatmStats(Table<String, String, Double> heta) {
-            this.heta = heta;
+        public void setHetatmStats(Map<String, double[]> heta) {
+            this.hetatmMap = heta;
         }
 
         public Model build() {
@@ -116,6 +121,7 @@ public class Model {
 
     private Model(Builder builder) {
         StatisticalSummaryValues aggregate = builder.aggregate;
+        hetaMap = builder.hetatmMap;
         lowerBound = builder.minima;
         upperBound = builder.maxima;
         path    = builder.path;

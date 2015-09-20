@@ -16,9 +16,12 @@
 
 package controller;
 
+import application.Model;
+import application.Service;
+import application.TableMenu;
+import application.Wrapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Table;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -35,10 +38,6 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.util.StringConverter;
 import org.controlsfx.control.SegmentedButton;
-import application.Model;
-import application.TableMenu;
-import application.Wrapper;
-import application.Service;
 import task.*;
 
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -48,6 +47,7 @@ import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -80,7 +80,7 @@ public class TableController implements Initializable {
 
     private FileNameExtensionFilter filter = new FileNameExtensionFilter("PDB", "pdb");
     private AsyncFunction<Multimap<String, String>, TableView<List<String>>> function1;
-    private AsyncFunction<Multimap<String, String>, Table<String, String, Double>> function2;
+    private AsyncFunction<Multimap<String, String>, Map<String, double[]>> function2;
     private AsyncFunction<Multimap<String, String>, List<Multimap<String, Double>>> function3;
     private AsyncFunction<List<Multimap<String, Double>>, List<Wrapper>> function4;
 
@@ -173,7 +173,7 @@ public class TableController implements Initializable {
                 Service.INSTANCE.execute(new FileTask(queue, path));
                 ListenableFuture<Multimap<String, String>> future1 = Service.INSTANCE.submit(new DataTask(queue));
                 ListenableFuture<TableView<List<String>>> future2 = Futures.transform(future1, function1);
-                ListenableFuture<Table<String, String, Double>> future3 = Futures.transform(future1, function2);
+                ListenableFuture<Map<String, double[]>> future3 = Futures.transform(future1, function2);
                 ListenableFuture<List<Multimap<String, Double>>> future4 = Futures.transform(future1, function3);
                 ListenableFuture<List<Wrapper>> future5 = Futures.transform(future4, function4);
                 try {

@@ -14,7 +14,7 @@
         <RadioMenuItem text="C-Alpha"    toggleGroup="$group"/>
     </Menu>
     <Menu text="Hetatm">
-        <MenuItem text="Show statistics" />
+        <MenuItem fx:id="stats" text="Show statistics" />
     </Menu>
     <Menu text="Info">
         <MenuItem text="Licensing" onAction="#handleLicenceDialogue"/>

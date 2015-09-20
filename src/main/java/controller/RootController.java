@@ -16,6 +16,8 @@
 
 package controller;
 
+import application.HetModel;
+import application.Model;
 import com.google.common.collect.Lists;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -28,19 +30,22 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import javafx.util.Duration;
-import application.Model;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+import java.io.IOException;
 import java.net.URL;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -99,6 +104,37 @@ public class RootController implements Initializable {
                 }
             }
         });
+        final NumberFormat formatter = NumberFormat.getNumberInstance();
+        formatter.setMaximumFractionDigits(2);
+        formatter.setMinimumFractionDigits(0);
+        menuController.getStats().setOnAction(event -> {
+            try {
+                TableView<HetModel> view = FXMLLoader.load(getClass().getResource("/hetatm.fxml"));
+                Model model = tableController.selectedItem().get();
+                Map<String, double[]> map = model.getHetaMap();
+                for (String key : map.keySet()) {
+                    double[] array = map.get(key);
+                    DescriptiveStatistics stats = new DescriptiveStatistics(array);
+                    double min = stats.getMin();
+                    double max = stats.getMax();
+                    double avg = stats.getMean();
+                    double std = stats.getStandardDeviation();
+
+                    HetModel het = new HetModel(key,
+                            formatter.format(min), formatter.format(max),
+                            formatter.format(avg), formatter.format(std));
+                    view.getItems().add(het);
+                }
+                Scene scene = new Scene(view);
+                scene.getStylesheets().add("/stylesheet.css");
+                Stage stage = new Stage();
+                stage.setScene(scene);
+                stage.showAndWait();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
 
         tableController.selectedItem().addListener(modelListener());
         tableController.getHToggle().addListener(statisticsListener());

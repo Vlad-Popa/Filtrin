@@ -30,6 +30,7 @@ import java.util.ResourceBundle;
 public class MenuController implements Initializable {
 
     @FXML private ToggleGroup group;
+    @FXML private MenuItem stats;
 
     private Alert alert;
     private Alert about;
@@ -66,5 +67,9 @@ public class MenuController implements Initializable {
     public String getValue() {
         RadioMenuItem item = (RadioMenuItem) group.getSelectedToggle();
         return item.getText();
+    }
+
+    public MenuItem getStats() {
+        return stats;
     }
 }
