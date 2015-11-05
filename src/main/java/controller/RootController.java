@@ -119,10 +119,11 @@ public class RootController implements Initializable {
                     double max = stats.getMax();
                     double avg = stats.getMean();
                     double std = stats.getStandardDeviation();
-
                     HetModel het = new HetModel(key,
-                            formatter.format(min), formatter.format(max),
-                            formatter.format(avg), formatter.format(std));
+                            formatter.format(min),
+                            formatter.format(max),
+                            formatter.format(avg),
+                            formatter.format(std));
                     view.getItems().add(het);
                 }
                 Scene scene = new Scene(view);

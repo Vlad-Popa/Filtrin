@@ -26,12 +26,16 @@ public class HetModel {
     private SimpleStringProperty pdb;
     private SimpleStringProperty avg, std, min, max;
 
-    public HetModel(String pdb, String avg, String std, String min, String max) {
+    public HetModel(String pdb,
+                    String min,
+                    String max,
+                    String avg,
+                    String std) {
         this.pdb = new SimpleStringProperty(pdb);
-        this.avg = new SimpleStringProperty(avg);
-        this.std = new SimpleStringProperty(std);
         this.min = new SimpleStringProperty(min);
         this.max = new SimpleStringProperty(max);
+        this.avg = new SimpleStringProperty(avg);
+        this.std = new SimpleStringProperty(std);
     }
 
     public SimpleStringProperty pdbProperty() {
