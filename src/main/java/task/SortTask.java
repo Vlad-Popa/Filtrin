@@ -45,31 +45,39 @@ public class SortTask implements Callable<Multimap<String, Double>> {
         int n = 0;
         int i = 0;
         for (String line : collection) {
-            String atm = line.substring(0, 4);
+            String atm = line.substring(0, 4).trim();
             String fac = line.substring(48, 54);
             double val = Double.parseDouble(fac);
             sum += val;
             switch (atm) {
-                case " N  ":
+                case "N":
                     if (n != 0) {
                         double num = sum - val;
-                        double rem = tmp != 0 ? tmp / (n - 4) : 0;
-                        double re2 = tmp != 0 ? (tmp - h) / (n - i - 4) : 0;
-                        if (Double.isNaN(re2)) re2 = h / i;
                         multimap.put("All atomsH",  num / n);
                         multimap.put("All atoms",  (num - h) / (n - i));
-                        multimap.put("Side chainH", rem);
-                        multimap.put("Side chain",  re2);
-                        n = i = 0;
-                        tmp = h = 0;
+                        if (tmp != 0) {
+                            multimap.put("Side chainH", tmp / (n - 4));
+                            multimap.put("Side chain", (tmp - h) / (n - i - 4));
+                        } else {
+                            if (h != 0) {
+                                multimap.put("Side chainH", (h / i));
+                            } else {
+                                multimap.put("Side chainH", 0.0);
+                            }
+                            multimap.put("Side chain", 0.0);
+                        }
+                        n = 0;
+                        i = 0;
+                        h = 0;
+                        tmp = 0;
                         sum = val;
                     }
                     break;
-                case " CA ": multimap.put("C-Alpha",    val);     break;
-                case " C  ": multimap.put("Backbone",   sum / 3); break;
-                case " O  ": multimap.put("Main chain", sum / 4); break;
+                case "CA": multimap.put("C-Alpha",   val);     break;
+                case "C": multimap.put("Backbone",   sum / 3); break;
+                case "O": multimap.put("Main chain", sum / 4); break;
                 default:
-                    if (atm.contains("H")) {
+                    if (atm.startsWith("H")) {
                         h += val;
                         i++;
                     }
@@ -79,15 +87,20 @@ public class SortTask implements Callable<Multimap<String, Double>> {
             n++;
         }
         if (n != 0) {
-            double rem = tmp != 0 ? tmp / (n - 4) : 0;
-            double re2 = tmp != 0 ? (tmp - h) / (n - i - 4) : 0;
-            if (Double.isNaN(re2)) re2 = h / i;
             multimap.put("All atomsH", sum / n);
             multimap.put("All atoms", (sum - h) / (n - i));
-            multimap.put("Side chainH", rem);
-            multimap.put("Side chain",  re2);
+            if (tmp != 0) {
+                multimap.put("Side chainH", tmp / (n - 4));
+                multimap.put("Side chain", (tmp - h) / (n - i - 4));
+            } else {
+                if (h != 0) {
+                    multimap.put("Side chainH", (h / i));
+                } else {
+                    multimap.put("Side chainH", 0.0);
+                }
+                multimap.put("Side chain", 0.0);
+            }
         }
-
         String str = Iterables.get(collection, 0);
         String idx = str.substring(11, 15).trim();
         double seq = Double.parseDouble(idx);

@@ -19,5 +19,7 @@
     <Menu text="Info">
         <MenuItem text="Licensing" onAction="#handleLicenceDialogue"/>
         <MenuItem text="About" onAction="#handleAboutDialogue" />
+        <MenuItem text="Data/Calculations" onAction="#handleNormalDialogue" />
+        <MenuItem text="Exporting" onAction="#handleExportDialog" />
     </Menu>
 </MenuBar>

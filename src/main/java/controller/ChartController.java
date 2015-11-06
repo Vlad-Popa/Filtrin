@@ -56,6 +56,8 @@ public class ChartController implements Initializable {
         insets2 = new Insets(0.0, 57.0, 0.0, 38.0);
         insets3 = new Insets(0.0, 43.0, 0.0, 40.0);
         insets4 = new Insets(0.0, 57.0, 0.0, 40.0);
+        yAxis.setLabel("Beta-Factor Average");
+        xAxis.setLabel("Residue number");
         xAxis.setTickLabelFormatter(new NumberStringConverter("#"));
         yAxis.setTickLabelFormatter(new NumberStringConverter("#0.0"));
         xSlider.lowValueProperty().bindBidirectional(xAxis.lowerBoundProperty());
