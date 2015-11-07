@@ -35,40 +35,32 @@ public class DataTask implements Callable<Multimap<String, String>> {
 
     @Override
     public Multimap<String, String> call() throws Exception {
-        ImmutableMultimap.Builder<String, String> multimap = ImmutableMultimap.builder();
+        ImmutableMultimap.Builder<String, String> map = ImmutableMultimap.builder();
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
-        boolean nID = true;
         while (true) {
             String line = queue.take();
             if (!line.equals("POISON")) {
                 char alt = line.charAt(16);
-                if (line.startsWith("TER")) {
-                    String str = line.substring(23, 26).trim();
-                    int resSeq = Integer.parseInt(str);
-                    max = Math.max(max, resSeq);
-                    nID = true;
-                } else if (alt == (' ') || alt == 'A') {
+                if (alt == (' ') || alt == 'A') {
                     if (line.startsWith("ATOM")) {
                         String key = line.substring(21, 22);
                         String val = line.substring(12, 66);
-                        multimap.put(key, val);
-                        if (nID) {
-                            String str = line.substring(23, 26).trim();
-                            int resSeq = Integer.parseInt(str);
-                            min = Math.min(min, resSeq);
-                            nID = false;
-                        }
+                        String str = line.substring(23, 26).trim();
+                        int resSeq = Integer.parseInt(str);
+                        max = Math.max(max, resSeq);
+                        min = Math.min(min, resSeq);
+                        map.put(key, val);
                     } else if (line.startsWith("HETATM")) {
                         String key = line.substring(17, 20);
                         String val = line.substring(60, 66);
-                        multimap.put(key, val);
+                        map.put(key, val);
                     }
                 }
             } else break;
         }
-        multimap.put("MIN", String.valueOf(min));
-        multimap.put("MAX", String.valueOf(max));
-        return multimap.build();
+        map.put("MIN", String.valueOf(min));
+        map.put("MAX", String.valueOf(max));
+        return map.build();
     }
 }

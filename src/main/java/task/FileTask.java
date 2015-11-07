@@ -39,7 +39,9 @@ public class FileTask implements Runnable {
     public void run() {
         try (Stream<String> lines = Files.lines(path)) {
             for (String line : (Iterable<String>) lines::iterator) {
-                queue.put(line);
+                if (line.startsWith("ATOM") || line.startsWith("HETATM")) {
+                    queue.put(line);
+                }
             }
             queue.put("POISON");
         } catch (InterruptedException | IOException e) {

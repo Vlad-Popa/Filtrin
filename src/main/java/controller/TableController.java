@@ -78,7 +78,7 @@ public class TableController implements Initializable {
     @FXML private ToggleButton hGridToggle;
     @FXML private ToggleButton vGridToggle;
 
-    private FileNameExtensionFilter filter = new FileNameExtensionFilter("PDB", "pdb");
+    private FileNameExtensionFilter filter = new FileNameExtensionFilter("PDB", "pdb", "txt");
     private AsyncFunction<Multimap<String, String>, TableView<List<String>>> function1;
     private AsyncFunction<Multimap<String, String>, Map<String, double[]>> function2;
     private AsyncFunction<Multimap<String, String>, List<Multimap<String, Double>>> function3;
