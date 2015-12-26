@@ -41,34 +41,34 @@ class ListTask(private val queue: BlockingQueue<String>,
         var min = 0
         var column = 0
         var chainId = ' '
-        var temporary = Integer.MIN_VALUE
+        var number = Integer.MIN_VALUE
         while (true) {
             val line = queue.take()
             if (line != "POISON") {
-                val resName  = line.substring(17, 20)
-                val resSeq   = line.substring(23, 26).toInt()
-                val lineId   = line[21]
-                val position = resSeq - min
+                val resName   = line.substring(17, 20)
+                val resSeq    = line.substring(23, 26).toInt()
+                val currentId = line[21]
+                val index = resSeq - min
                 if (chainId == ' ') {
-                    chainId = lineId
+                    chainId = currentId
                     min = resSeq
-                } else if (chainId != lineId) {
+                } else if (chainId != currentId) {
                     columns.add(newColumn(column, chainId.toString()))
-                    chainId = lineId
+                    chainId = currentId
                     column++
                 }
-                if (temporary != position) {
-                    if (position >= collection.size) {
+                if (number != index) {
+                    if (index >= collection.size) {
                         collection.add(arrayListOf(resSeq.toString()))
                     }
-                    val list = collection[position]
+                    val list = collection[index]
                     if (list.size < column) {
                         for (i in list.size..column - 1) {
                             list.add(" ")
                         }
                     }
                     list.add(resName)
-                    temporary = position
+                    number = index
                 }
             } else break
         }
